@@ -120,13 +120,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\clsSensorK.cs" />
+    <Compile Include="Common\clsSensorKBase.cs" />
     <Compile Include="Common\clsStructure.cs" />
     <Compile Include="Common\Win32.cs" />
-    <Compile Include="CT40\clsCT40_SensorK.cs" />
-    <Compile Include="CT45\clsCT45_SensorK.cs" />
-    <Compile Include="CT47\clsCT47_SensorK.cs" />
-    <Compile Include="CW45\clsCW45_SensorK.cs" />
+    <Compile Include="CT40\clsCT40SensorK.cs" />
+    <Compile Include="CT45\clsCT45SensorK.cs" />
+    <Compile Include="CT47\clsCT47SensorK.cs" />
+    <Compile Include="CW45\clsCW45SensorK.cs" />
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -148,6 +148,18 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="CT40\CT40_Option.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="CT45\CT45_Option.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="CT47\CT47_Option.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="CW45\CW45_Option.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="DeleteCOMNameArbiter.reg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

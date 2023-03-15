@@ -1,5 +1,4 @@
-﻿using F002520.Properties;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -8,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using F002520.Properties;
+
 
 namespace F002520
 {
@@ -15,7 +16,7 @@ namespace F002520
     {
         #region Enum
 
-        private enum ProductID : int
+        private enum ModelID : int
         { 
             CT40 = 1,
             CT40P,
@@ -25,28 +26,35 @@ namespace F002520
             CW45 
         }
 
-
         #endregion
 
         #region Struct
 
+        // Option.ini
         private struct OptionData
         {     
-            // Option.ini
+            public string TestMode;
+            public string DAQDevice;
+            public string AreaLocation;
+            public string MESEnable;
+            public string MESStation;
 
-        
+            public string PLCIP;
+            public string PLCPort;
+            public int ReadDB;
+            public int WriteDB;
         }
 
+    
 
         #endregion
 
         #region Variable
 
         private bool m_bStop = false;
-      
-        private string m_sCurrentPath = "";
         private int m_nProductID = 0;
-        private clsSensorK m_objSensorK;
+        private OptionData m_stOptionData = new OptionData();
+        private clsSensorKBase m_objSensorK;
 
         #endregion
 
@@ -71,7 +79,7 @@ namespace F002520
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
 
-            ReleaseHW();
+            //ReleaseHW();
         }
 
         #endregion
@@ -187,14 +195,14 @@ namespace F002520
             {
                 #region Init
 
-                if (m_bRunInitialized == false)
-                {
-                    if (InitRun() == false)
-                    {
-                        return false;
-                    }
-                    return true;
-                }
+                //if (m_bRunInitialized == false)
+                //{
+                //    if (InitRun() == false)
+                //    {
+                //        return false;
+                //    }
+                //    return true;
+                //}
 
                 #endregion
 
@@ -222,25 +230,25 @@ namespace F002520
 
             switch(m_nProductID)
             {
-                case (int)ProductID.CT40:
-                case (int)ProductID.CT40P:
-                    m_objSensorK = new clsCT40_SensorK();
+                case (int)ModelID.CT40:
+                case (int)ModelID.CT40P:
+                    m_objSensorK = new clsCT40SensorK();
                     m_objSensorK.Start();
                     break;
 
-                case (int)ProductID.CT45:
-                case (int)ProductID.CT45P:
-                    m_objSensorK = new clsCT45_SensorK();
+                case (int)ModelID.CT45:
+                case (int)ModelID.CT45P:
+                    m_objSensorK = new clsCT45SensorK();
                     m_objSensorK.Start();
                     break;
 
-                case (int)ProductID.CT47:
-                    m_objSensorK = new clsCT47_SensorK();
+                case (int)ModelID.CT47:
+                    m_objSensorK = new clsCT47SensorK();
                     m_objSensorK.Start();
                     break;
 
-                case (int)ProductID.CW45:
-                    m_objSensorK = new clsCW45_SensorK();
+                case (int)ModelID.CW45:
+                    m_objSensorK = new clsCW45SensorK();
                     m_objSensorK.Start();
                     break;
 
@@ -248,7 +256,6 @@ namespace F002520
 
                     break;
             }
-
 
 
             strErrorMessage = "";
