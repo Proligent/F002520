@@ -75,6 +75,9 @@
     <Reference Include="libnodave.net">
       <HintPath>Lib\libnodave.net.dll</HintPath>
     </Reference>
+    <Reference Include="log4net">
+      <HintPath>Lib\log4net.dll</HintPath>
+    </Reference>
     <Reference Include="mdbsmnglib">
       <HintPath>Lib\mdbsmnglib.dll</HintPath>
     </Reference>
@@ -120,19 +123,27 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Common\clsSensorKBase.cs" />
+    <Compile Include="Common\clsDaqmx.cs" />
+    <Compile Include="Common\clsExecProcess.cs" />
+    <Compile Include="Common\clsIniFile.cs" />
+    <Compile Include="Common\clsIPMAC.cs" />
+    <Compile Include="Common\clsMDCS.cs" />
+    <Compile Include="Common\clsNI6001.cs" />
+    <Compile Include="Common\Logger.cs" />
+    <Compile Include="Platform\clsSensorKBase.cs" />
     <Compile Include="Common\clsStructure.cs" />
     <Compile Include="Common\Win32.cs" />
-    <Compile Include="CT40\clsCT40SensorK.cs" />
-    <Compile Include="CT45\clsCT45SensorK.cs" />
-    <Compile Include="CT47\clsCT47SensorK.cs" />
-    <Compile Include="CW45\clsCW45SensorK.cs" />
+    <Compile Include="Platform\clsCT40SensorK.cs" />
+    <Compile Include="Platform\clsCT45SensorK.cs" />
+    <Compile Include="Platform\clsCT47SensorK.cs" />
+    <Compile Include="Platform\clsCW45SensorK.cs" />
     <Compile Include="frmMain.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="Platform\clsSensorKTestFactory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="frmMain.resx">
@@ -166,6 +177,9 @@
     <None Include="HWSerNumEmulation.reg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Option.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -184,6 +198,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Forms\" />
+    <Folder Include="Hardware\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\close_20.png" />
@@ -193,6 +208,9 @@
     <Content Include="Resources\menu_35.png" />
     <Content Include="Resources\minimize_16.png" />
     <Content Include="Resources\normal_16.png" />
+    <Content Include="CT40\CT40_SensorK_TestItem.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

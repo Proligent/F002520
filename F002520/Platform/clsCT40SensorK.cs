@@ -17,7 +17,6 @@ namespace F002520
 
         private struct ModelOptionData
         {
-
             // ScanSheet
             public string ScanSheetStation;
 
@@ -35,8 +34,6 @@ namespace F002520
             public string MDCSPreStationVarName;
             public string MDCSPreStationVarValue;   
         }
-
-     
 
         #endregion
 
@@ -86,18 +83,13 @@ namespace F002520
 
         #endregion
 
-
         #region Variable
 
         private bool m_bRunInitialized = false;
-
         private ModelOptionData m_stModelOptionData;
         private TestSaveData m_stTestMDCSData;
 
         #endregion
-
-
-
 
         #region Function
 
@@ -141,12 +133,19 @@ namespace F002520
             throw new NotImplementedException();
         }
 
+        #endregion
 
+        #region TestItem
+
+        private override bool TestPowerOn()
+        { 
+        
+        
+        }
 
         #endregion
 
 
-    
 
     }
 }

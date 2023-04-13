@@ -8,10 +8,10 @@ namespace F002520
 {
     public struct MFGData
     {
-        public string modelNumber;
-        public string sn;
-        public string pn;
-        public string cn;
+        public string SN;
+        public string PN;
+        public string Model;
+        public string CN;
         public string IMEI;
         public string MEID;
         public string BDA;
@@ -40,8 +40,31 @@ namespace F002520
         public Int32 StopBits;
     }
 
- 
+    public struct TestResult
+    {
+        public bool TestPassed;
+        public int TestFailCode;
+        public string TestFailMessage;
+        public string TestStatus;
+    }
 
+    public struct TestRecord
+    {
+        public string ToolNumber;
+        public string ToolRev;
+        public string SN;
+        public string Model;
+        public string SKU;
+        public string OSVersion;
+
+        public double TestTotalTime;
+    }
+
+    public struct TestSaveData
+    {
+        public TestResult TestResult;
+        public TestRecord TestRecord;
+    }
 
 
 

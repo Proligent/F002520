@@ -9,6 +9,9 @@ namespace F002520
     class clsCW45SensorK : clsSensorKBase
     {
 
+
+
+
         public override void Start()
         {
             throw new NotImplementedException();

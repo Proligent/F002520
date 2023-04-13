@@ -300,7 +300,7 @@
             // btnStart
             // 
             this.btnStart.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
-            this.btnStart.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(0)))));
+            this.btnStart.BackColor = System.Drawing.Color.Green;
             this.btnStart.Font = new System.Drawing.Font("Courier New", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnStart.Location = new System.Drawing.Point(25, 21);
             this.btnStart.Name = "btnStart";
@@ -325,7 +325,7 @@
             // 
             this.lblTestResult.BackColor = System.Drawing.Color.Green;
             this.lblTestResult.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTestResult.Font = new System.Drawing.Font("Courier New", 36F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTestResult.Font = new System.Drawing.Font("Courier New", 48F, ((System.Drawing.FontStyle)((System.Drawing.FontStyle.Bold | System.Drawing.FontStyle.Italic))), System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTestResult.Location = new System.Drawing.Point(3, 3);
             this.lblTestResult.Name = "lblTestResult";
             this.lblTestResult.Size = new System.Drawing.Size(272, 144);

@@ -56,13 +56,16 @@ namespace F002520
         private OptionData m_stOptionData = new OptionData();
         private clsSensorKBase m_objSensorK;
 
+
+
+
         #endregion
 
         #region Property
 
         #endregion
 
-        #region MainForm
+        #region Form
 
         public frmMain()
         {
@@ -88,9 +91,6 @@ namespace F002520
 
 
         #endregion
-
-
-
 
         #region Event
 
@@ -173,8 +173,6 @@ namespace F002520
             Win32.ReleaseCapture();
             Win32.SendMessage(this.Handle, 0x112, 0xf012, 0);
         }
-
-
 
         #endregion
 
