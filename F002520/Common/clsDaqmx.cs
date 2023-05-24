@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-
 using NationalInstruments;
 using NationalInstruments.DAQmx;
 
@@ -161,9 +160,13 @@ namespace F002520
             }
         }
 
-        private void Close()
+        public bool Close()
         {
-            Reset(m_i_DaqDeviceNumber);
+            if (Reset(m_i_DaqDeviceNumber) == false)
+            {
+                return false;
+            }
+            return true;
         }
 
         private bool Reset(int i_DaqDeviceNumber)
@@ -799,6 +802,71 @@ namespace F002520
 
                 m_AsyncCallback = new AsyncCallback(CounterInCallback);
                 m_CounterReader.BeginReadSingleSampleDouble(m_AsyncCallback, null);
+            }
+            catch (Exception ex)
+            {
+                m_str_Error = ex.Message;
+                m_Task_MeasureLowFreq.Dispose();
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool MeasureLowFrequency(string lines, string FrequencyTerminal, string name, double min, double max, double time)
+        {
+            try
+            {
+                m_d_MeasuredFrequency = 0;
+
+                m_Task_MeasureLowFreq = new Task();
+                CIChannel CI = m_Task_MeasureLowFreq.CIChannels.CreateFrequencyChannel(lines, name, min, max, CIFrequencyStartingEdge.Rising,
+                    CIFrequencyMeasurementMethod.LowFrequencyOneCounter, time, 4, CIFrequencyUnits.Hertz);
+                CI.FrequencyTerminal = FrequencyTerminal;
+
+                m_CounterReader = new CounterReader(m_Task_MeasureLowFreq.Stream);
+
+                // For .NET Framework 2.0 or later, use SynchronizeCallbacks to specify that the object 
+                // marshals callbacks across threads appropriately.
+                m_CounterReader.SynchronizeCallbacks = true;
+
+                m_AsyncCallback = new AsyncCallback(CounterInCallback);
+                m_CounterReader.BeginReadSingleSampleDouble(m_AsyncCallback, null);
+            }
+            catch (Exception ex)
+            {
+                m_str_Error = ex.Message;
+                m_Task_MeasureLowFreq.Dispose();
+                return false;
+            }
+
+            return true;
+        }
+
+        public bool MeasureLowFrequencySync(string lines, string FrequencyTerminal, string name, double min, double max, double time, ref double Frequency)
+        {
+            try
+            {
+                m_d_MeasuredFrequency = 0;
+
+                m_Task_MeasureLowFreq = new Task();
+                CIChannel CI = m_Task_MeasureLowFreq.CIChannels.CreateFrequencyChannel(lines, name, min, max, CIFrequencyStartingEdge.Rising,
+                    CIFrequencyMeasurementMethod.LowFrequencyOneCounter, time, 4, CIFrequencyUnits.Hertz);
+                CI.FrequencyTerminal = FrequencyTerminal;
+
+                //m_CounterReader = new CounterReader(m_Task_MeasureLowFreq.Stream);
+
+                //// For .NET Framework 2.0 or later, use SynchronizeCallbacks to specify that the object 
+                //// marshals callbacks across threads appropriately.
+                //m_CounterReader.SynchronizeCallbacks = true;
+
+                //m_AsyncCallback = new AsyncCallback(CounterInCallback);
+                //m_CounterReader.BeginReadSingleSampleDouble(m_AsyncCallback, null);
+
+                CounterReader counterFreq = new CounterReader(m_Task_MeasureLowFreq.Stream);
+                counterFreq.SynchronizeCallbacks = false;
+
+                Frequency = counterFreq.ReadSingleSampleDouble();
             }
             catch (Exception ex)
             {

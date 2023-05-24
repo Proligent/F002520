@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace F002520
 {
-    class clsMDCS
+    public class clsMDCS
     {
         #region Variable
 
@@ -41,7 +41,6 @@ namespace F002520
 
         ~clsMDCS()
         {
-
         }
 
         #endregion
@@ -284,7 +283,7 @@ namespace F002520
                 m_obj_MDCSDevice.AddStringVariable("SN", m_obj_Data.TestRecord.SN);
                 m_obj_MDCSDevice.AddStringVariable("Model", m_obj_Data.TestRecord.Model);
                 m_obj_MDCSDevice.AddStringVariable("SKU", m_obj_Data.TestRecord.SKU);
-                m_obj_MDCSDevice.AddStringVariable("OSVersion", m_obj_Data.TestRecord.OSVersion);
+                m_obj_MDCSDevice.AddStringVariable("OSVersion", m_obj_Data.TestRecord.AndroidOSVersion);
                 // Numeric Variable
                 m_obj_MDCSDevice.AddNumericVariable("TestTotalTime", m_obj_Data.TestRecord.TestTotalTime);
 

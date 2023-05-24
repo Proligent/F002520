@@ -123,13 +123,42 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Common\clsCommonFunction.cs" />
+    <Compile Include="Common\clsConfigHelper.cs" />
     <Compile Include="Common\clsDaqmx.cs" />
+    <Compile Include="Common\clsEquipmentInitial.cs" />
     <Compile Include="Common\clsExecProcess.cs" />
     <Compile Include="Common\clsIniFile.cs" />
     <Compile Include="Common\clsIPMAC.cs" />
+    <Compile Include="Common\clsJYDAMDAQ.cs" />
     <Compile Include="Common\clsMDCS.cs" />
     <Compile Include="Common\clsNI6001.cs" />
+    <Compile Include="Common\clsNI6251.cs" />
+    <Compile Include="Common\clsPLCDaveHelper.cs" />
+    <Compile Include="Common\clsScanSheet.cs" />
+    <Compile Include="Common\clsUploadMES.cs" />
+    <Compile Include="Common\clsUtil.cs" />
+    <Compile Include="Common\CPLCDave.cs" />
     <Compile Include="Common\Logger.cs" />
+    <Compile Include="Common\USBEnumerator.cs" />
+    <Compile Include="Forms\frmMCF.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmMCF.Designer.cs">
+      <DependentUpon>frmMCF.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmMES.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmMES.Designer.cs">
+      <DependentUpon>frmMES.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\frmProductLine.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmProductLine.Designer.cs">
+      <DependentUpon>frmProductLine.cs</DependentUpon>
+    </Compile>
     <Compile Include="Platform\clsSensorKBase.cs" />
     <Compile Include="Common\clsStructure.cs" />
     <Compile Include="Common\Win32.cs" />
@@ -146,6 +175,15 @@
     <Compile Include="Platform\clsSensorKTestFactory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Forms\frmMCF.resx">
+      <DependentUpon>frmMCF.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmMES.resx">
+      <DependentUpon>frmMES.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\frmProductLine.resx">
+      <DependentUpon>frmProductLine.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="frmMain.resx">
       <DependentUpon>frmMain.cs</DependentUpon>
     </EmbeddedResource>
@@ -159,22 +197,10 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
-    <None Include="CT40\CT40_Option.ini">
+    <None Include="Reg\DeleteCOMNameArbiter.reg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="CT45\CT45_Option.ini">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="CT47\CT47_Option.ini">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="CW45\CW45_Option.ini">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="DeleteCOMNameArbiter.reg">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="HWSerNumEmulation.reg">
+    <None Include="Reg\HWSerNumEmulation.reg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="log4net.config">
@@ -194,13 +220,38 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
   </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
-    <Folder Include="Forms\" />
-    <Folder Include="Hardware\" />
-  </ItemGroup>
-  <ItemGroup>
+    <Content Include="Lib\ICSharpCode.SharpZipLib.dll" />
+    <Content Include="Lib\libnodave.dll" />
+    <Content Include="Lib\libnodave.net.dll" />
+    <Content Include="Lib\log4net.dll" />
+    <Content Include="Lib\mdbsmnglib.dll" />
+    <Content Include="Lib\MDCS.dll" />
+    <Content Include="Lib\MDCS.XmlSerializers.dll" />
+    <Content Include="Lib\Modbus.dll" />
+    <Content Include="Lib\modbus_hon.dll" />
+    <Content Include="Lib\NationalInstruments.Common.dll" />
+    <Content Include="Lib\NationalInstruments.DAQmx.dll" />
+    <Content Include="Lib\NationalInstruments.NI4882.dll" />
+    <Content Include="Lib\Newtonsoft.Json.dll" />
+    <Content Include="Lib\QMSL_MSVC10R.dll" />
+    <Content Include="Lib\SmartFactory.ExternalDLL.dll" />
+    <Content Include="Lib\WinTcpS7_1K.dll" />
+    <Content Include="TestConfig\TestItem\CT45\CT45_SensorK_TestItem.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
+    </Content>
+    <Content Include="TestConfig\TestItem\CT47\CT47_SensorK_TestItem.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestConfig\TestItem\CW45\CW45_SensorK_TestItem.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Resources\close_20.png" />
     <Content Include="Resources\HoneywellLog_128.png" />
     <Content Include="Resources\HoneywellLog_150.png" />
@@ -208,8 +259,12 @@
     <Content Include="Resources\menu_35.png" />
     <Content Include="Resources\minimize_16.png" />
     <Content Include="Resources\normal_16.png" />
-    <Content Include="CT40\CT40_SensorK_TestItem.xml">
+    <Content Include="TestConfig\TestItem\CT40\CT40_SensorK_TestItem.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="TestConfig\Equipment\EquipmentConfig.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

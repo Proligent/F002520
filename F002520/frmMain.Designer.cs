@@ -49,7 +49,7 @@
             this.lblTestResult = new System.Windows.Forms.Label();
             this.panelTestMode = new System.Windows.Forms.Panel();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.radioButton1 = new System.Windows.Forms.RadioButton();
+            this.radiobutManual = new System.Windows.Forms.RadioButton();
             this.radiobutAuto = new System.Windows.Forms.RadioButton();
             this.panelMDCS = new System.Windows.Forms.Panel();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
@@ -161,7 +161,7 @@
             this.lblTitleBar.Padding = new System.Windows.Forms.Padding(4, 0, 0, 0);
             this.lblTitleBar.Size = new System.Drawing.Size(1230, 40);
             this.lblTitleBar.TabIndex = 0;
-            this.lblTitleBar.Text = "F002520 Sensor Calibration";
+            this.lblTitleBar.Text = "F002520 Sensor Calibration Fixture";
             this.lblTitleBar.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             this.lblTitleBar.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.lblTitleBar_MouseDoubleClick);
             this.lblTitleBar.MouseDown += new System.Windows.Forms.MouseEventHandler(this.lblTitleBar_MouseDown);
@@ -345,7 +345,7 @@
             // 
             // groupBox2
             // 
-            this.groupBox2.Controls.Add(this.radioButton1);
+            this.groupBox2.Controls.Add(this.radiobutManual);
             this.groupBox2.Controls.Add(this.radiobutAuto);
             this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox2.Font = new System.Drawing.Font("Courier New", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -357,18 +357,18 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "TestMode:";
             // 
-            // radioButton1
+            // radiobutManual
             // 
-            this.radioButton1.AutoSize = true;
-            this.radioButton1.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.radioButton1.ForeColor = System.Drawing.SystemColors.Control;
-            this.radioButton1.Location = new System.Drawing.Point(156, 28);
-            this.radioButton1.Name = "radioButton1";
-            this.radioButton1.Size = new System.Drawing.Size(97, 26);
-            this.radioButton1.TabIndex = 0;
-            this.radioButton1.TabStop = true;
-            this.radioButton1.Text = "Manual";
-            this.radioButton1.UseVisualStyleBackColor = true;
+            this.radiobutManual.AutoSize = true;
+            this.radiobutManual.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radiobutManual.ForeColor = System.Drawing.SystemColors.Control;
+            this.radiobutManual.Location = new System.Drawing.Point(156, 28);
+            this.radiobutManual.Name = "radiobutManual";
+            this.radiobutManual.Size = new System.Drawing.Size(97, 26);
+            this.radiobutManual.TabIndex = 0;
+            this.radiobutManual.TabStop = true;
+            this.radiobutManual.Text = "Manual";
+            this.radiobutManual.UseVisualStyleBackColor = true;
             // 
             // radiobutAuto
             // 
@@ -460,13 +460,13 @@
             // 
             this.lblVersion.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.lblVersion.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblVersion.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.lblVersion.ForeColor = System.Drawing.SystemColors.Control;
+            this.lblVersion.Font = new System.Drawing.Font("Courier New", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblVersion.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(128)))), ((int)(((byte)(0)))));
             this.lblVersion.Location = new System.Drawing.Point(112, 0);
             this.lblVersion.Name = "lblVersion";
             this.lblVersion.Size = new System.Drawing.Size(168, 45);
             this.lblVersion.TabIndex = 3;
-            this.lblVersion.Text = "0.0.0.1";
+            this.lblVersion.Text = "01.01";
             this.lblVersion.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // label5
@@ -692,7 +692,7 @@
         private System.Windows.Forms.PictureBox picBoxLogo;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Panel panelTestResult;
-        private System.Windows.Forms.RadioButton radioButton1;
+        private System.Windows.Forms.RadioButton radiobutManual;
         private System.Windows.Forms.RadioButton radiobutAuto;
         private System.Windows.Forms.RadioButton radioButton2;
         private System.Windows.Forms.RadioButton radioButProduction;

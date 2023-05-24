@@ -9,33 +9,42 @@ using log4net.Config;
 namespace F002520
 {
 
-    public static class Logger
+    public class Logger
     {
-        //private static readonly ILog Log = LogManager.GetLogger(typeof(Logger));
-        private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+        private static readonly ILog Log = LogManager.GetLogger("Main");
+        //private static readonly log4net.ILog Log = LogManager.GetLogger(typeof(Logger));
+        //private static readonly ILog Log = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
 
         static Logger()
         {
-            XmlConfigurator.Configure(); // 加载 log4net 配置文件
+            log4net.Config.XmlConfigurator.Configure(); // 加载 log4net配置文件
         }
 
-        #region Debug
+        #region Function
 
-        //public static void Debug(string message)
-        //{
-        //    if (Log.IsDebugEnabled)
-        //    {
-        //        Log.Debug(message);
-        //    }
-        //}
+        public static bool ChangeLogFileName(string AppenderName, string NewFileName)
+        {
+            log4net.Repository.ILoggerRepository RootRep = Log.Logger.Repository;
 
-        //public static void Debug(string message, params object[] args)
-        //{
-        //    if (Log.IsDebugEnabled)
-        //    {
-        //        Log.DebugFormat(message, args);
-        //    }
-        //}
+            foreach (log4net.Appender.IAppender iApp in RootRep.GetAppenders())
+            {
+                //string appenderName = iApp.Name;
+                if (iApp.Name.CompareTo(AppenderName) == 0 && iApp is log4net.Appender.FileAppender)
+                {
+                    log4net.Appender.FileAppender fApp = (log4net.Appender.FileAppender)iApp;
+                    fApp.File = NewFileName;
+                    fApp.ActivateOptions();
+                    return true;    // appender found and name changed to NewFileName
+                }
+            }
+
+            return false;   // appender not found
+        }
+
+        #endregion
+
+        #region Level
 
         public static void Debug(string message, params object[] args)
         {
@@ -50,26 +59,6 @@ namespace F002520
             }
         }
 
-        #endregion
-
-        #region Info
-
-        //public static void Info(string message)
-        //{
-        //    if (Log.IsInfoEnabled)
-        //    {
-        //        Log.Info(message);
-        //    }
-        //}
-
-        //public static void Info(string message, params object[] args)
-        //{
-        //    if (Log.IsInfoEnabled)
-        //    {
-        //        Log.InfoFormat(message, args);
-        //    }
-        //}
-
         public static void Info(string message, params object[] args)
         {
             if (Log.IsInfoEnabled)
@@ -80,28 +69,8 @@ namespace F002520
                 }
 
                 Log.Info(message);
-            } 
+            }
         }
-
-        #endregion
-
-        #region Warn
-
-        //public static void Warn(string message)
-        //{
-        //    if (Log.IsWarnEnabled)
-        //    {
-        //        Log.Warn(message);
-        //    }
-        //}
-
-        //public static void Warn(string message, params object[] args)
-        //{
-        //    if (Log.IsWarnEnabled)
-        //    {
-        //        Log.WarnFormat(message, args);
-        //    }
-        //}
 
         public static void Warn(string message, params object[] args)
         {
@@ -112,29 +81,9 @@ namespace F002520
                     message = string.Format(message, args);
                 }
 
-                Log.Warn(message);  
-            } 
+                Log.Warn(message);
+            }
         }
-
-        #endregion
-
-        #region Error
-
-        //public static void Error(string message)
-        //{
-        //    if (Log.IsErrorEnabled)
-        //    {
-        //        Log.Error(message);
-        //    }
-        //}
-
-        //public static void Error(string message, params object[] args)
-        //{
-        //    if (Log.IsErrorEnabled)
-        //    {
-        //        Log.ErrorFormat(message, args);
-        //    }
-        //}
 
         public static void Error(string message, params object[] args)
         {
@@ -149,26 +98,6 @@ namespace F002520
             }
         }
 
-        #endregion
-
-        #region Fatal
-
-        //public static void Fatal(string message)
-        //{
-        //    if (Log.IsFatalEnabled)
-        //    {
-        //        Log.Fatal(message);
-        //    }
-        //}
-
-        //public static void Fatal(string message, params object[] args)
-        //{
-        //    if (Log.IsFatalEnabled)
-        //    {
-        //        Log.FatalFormat(message, args);
-        //    }
-        //}
-
         public static void Fatal(string message, params object[] args)
         {
             if (Log.IsFatalEnabled)
@@ -179,7 +108,7 @@ namespace F002520
                 }
 
                 Log.Fatal(message);
-            }  
+            }
         }
 
         #endregion

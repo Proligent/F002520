@@ -12,10 +12,12 @@ namespace F002520
      *  REV     AUTHOR      DATE            COMMENTS
      *  A       CalvinXie   2023/03/15      First Version.
      *  
+     *  
      ****************************************************************************************/
 
     static class Program
     {
+        public static frmMain g_mainForm;
         public static string g_strToolNumber = "";
         public static string g_strToolRev = "";
         private static System.Threading.Mutex mutex;
@@ -39,14 +41,15 @@ namespace F002520
             {
                 Application.EnableVisualStyles();
                 Application.SetCompatibleTextRenderingDefault(false);
-                Application.Run(new frmMain());
+
+                g_mainForm = new frmMain();
+                Application.Run(g_mainForm);
                 mutex.ReleaseMutex();
             }
             else
             {
                 MessageBox.Show("F002520 Already Running !!!");
             }
-
         }
     }
 }
