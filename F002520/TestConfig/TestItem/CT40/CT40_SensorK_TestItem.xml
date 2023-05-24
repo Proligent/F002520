@@ -1,0 +1,60 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<Configuration>
+
+  <TestItemList>
+    <Item Name="TestInit" Enable="TRUE"/>
+    <Item Name="TestPowerOn" Enable="TRUE"/>
+    <Item Name="TestCheckDeviceReady" Enable="TRUE"/>
+    <Item Name="TestReadMFGData" Enable="TRUE"/>
+    <Item Name="TestCheckRFResult" Enable="FALSE"/>
+    <Item Name="TestCheckPreStation" Enable="TRUE"/>
+    <Item Name="TestGSensorCalibation" Enable="TRUE"/>
+    <Item Name="TestGYROSensorCalibration" Enable="TRUE"/>
+    <Item Name="TestPSensorCalibration" Enable="TRUE"/>
+    <Item Name="TestPSensorFunction" Enable="TRUE"/>
+    <Item Name="TestAudioCalibration" Enable="TRUE"/>
+    <Item Name="TestBarometerSensorOffset" Enable="TRUE"/>
+    <Item Name="TestReboot" Enable="TRUE"/>
+    <Item Name="TestEnd" Enable="TRUE"/>
+    <Item Name="TestSendMES" Enable="TRUE"/>
+    <Item Name="TestSendMDCS" Enable="TRUE"/>
+  </TestItemList>
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</Configuration>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

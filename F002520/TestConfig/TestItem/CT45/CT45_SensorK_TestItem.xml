@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8" ?> 
+
+<Configuration>
+
+  <TestItemList>
+    <Item Name="TestInit" Enable="TRUE"/>
+    <Item Name="TestPowerOn" Enable="TRUE"/>
+    <Item Name="TestCheckDeviceReady" Enable="TRUE"/>
+    <Item Name="TestReadMFGData" Enable="TRUE"/>
+    <Item Name="TestCheckRFResult" Enable="FALSE"/>
+    <Item Name="TestCheckPreStation" Enable="TRUE"/>
+    <Item Name="TestGSensorCalibation" Enable="TRUE"/>
+    <Item Name="TestGYROSensorCalibration" Enable="TRUE"/>
+    <Item Name="TestPSensorCalibration" Enable="TRUE"/>
+    <Item Name="TestPSensorFunction" Enable="TRUE"/>
+    <Item Name="TestAudioCalibration" Enable="TRUE"/>
+    <Item Name="TestBarometerSensorOffset" Enable="TRUE"/>
+    <Item Name="TestReboot" Enable="TRUE"/>
+    <Item Name="TestEnd" Enable="TRUE"/>
+    <Item Name="TestSendMES" Enable="TRUE"/>
+    <Item Name="TestSendMDCS" Enable="TRUE"/>
+  </TestItemList>
+
+  
+  <TestItemParameterList>
+    
+    <TestInit> 
+    </TestInit>
+
+    <TestPowerOn>
+    </TestPowerOn>
+
+    <TestCheckDeviceReady>
+      <ReConnectTimes>3</ReConnectTimes>
+      
+    </TestCheckDeviceReady>
+
+    <TestReadMFGData>
+    </TestReadMFGData>
+
+    <TestCheckRFResult>
+      <MDCSVarName>CheckRFRlt</MDCSVarName>
+      <GetRFResultPersist>adb shell getprop persist.sys.RFRlt</GetRFResultPersist>
+      <DelayAfter>0</DelayAfter>
+    </TestCheckRFResult>
+
+    <TestCheckPreStation>  
+      <PreStationDeviceName>F002294_EDA51_RF_Fixture</PreStationDeviceName>
+      <VarName>FailCode</VarName>
+      <VarValue>0</VarValue>
+    </TestCheckPreStation>
+
+    <TestGSensorCalibation>
+    </TestGSensorCalibation>
+
+    <TestGYROSensorCalibration>
+    </TestGYROSensorCalibration>
+
+    <TestPSensorCalibration>
+    </TestPSensorCalibration>
+
+    <TestPSensorFunction>
+    </TestPSensorFunction>
+
+    <TestAudioCalibration>
+    </TestAudioCalibration>
+
+    <TestBarometerSensorOffset>
+    </TestBarometerSensorOffset>
+
+    <TestReboot>
+    </TestReboot>
+
+    <TestEnd>
+    </TestEnd>
+    
+    <TestSendMES>
+      <StationName>SC</StationName>
+    </TestSendMES>
+
+    <TestSendMDCS>
+      <!--Production | Test-->
+      <MDCSMode>Production</MDCSMode>
+      <DeviceName>F002357_EDA51_BIT_Fixture</DeviceName>
+      <URL>"http://hsm-mdcsws-ch3u.honeywell.com/MDCSWebService/MDCSService.asmx"</URL>   
+    </TestSendMDCS>
+    
+  </TestItemParameterList>
+  
+</Configuration>

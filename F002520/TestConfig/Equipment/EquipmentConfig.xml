@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+
+  <DeviceList>
+
+    <DAQ>
+      <Enable>TRUE</Enable>
+      <!-- NI | JY-DAM-->
+      <Type>NI</Type>
+      <Name>Dev1</Name>
+    </DAQ>
+
+    <MOTOR>
+      <Enable>TRUE</Enable>
+      <!-- OMORN | PANASONIC-->
+      <DeviceType>OMORN</DeviceType>
+      <PortNum>4</PortNum>
+      <BaudRate>9600</BaudRate>
+      <Parity>Even</Parity>
+      <DataBits>8</DataBits>
+      <StopBits>1</StopBits>
+      <Home>19.7</Home>
+    </MOTOR>
+
+    <PLC>
+      <Enable>TRUE</Enable>
+      <LocalIP>192.168.0.1</LocalIP>
+      <PLCIP>192.168.0.1</PLCIP>
+      <PLCPort>102</PLCPort>
+      <ReadDB>104</ReadDB>
+      <WriteDB>105</WriteDB>
+      <Location>SensorK1</Location>
+    </PLC>
+
+  </DeviceList>
+
+</Configuration>
