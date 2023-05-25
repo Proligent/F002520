@@ -29,6 +29,11 @@ namespace F002520
         public abstract bool TestCheckDeviceReady();
         public abstract bool TestReadMFGData();
         public abstract bool TestCheckPreStation();
+        public abstract bool TestAutoChangeOver();
+        public abstract bool TestScreenOff();
+        public abstract bool TestMoveDamBoardUp();
+        public abstract bool TestCheckSensorList();
+
         // Calibration
         public abstract bool TestGSensorCalibation();       // 重力加速度传感器
         public abstract bool TestGYROSensorCalibration();   // 陀螺仪

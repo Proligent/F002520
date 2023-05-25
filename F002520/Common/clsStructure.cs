@@ -61,15 +61,26 @@ namespace F002520
         public string WLAN_AUX_MAC_ADDRESS;
         public string BLUETOOTH_DEVICE_ADDRESS;
         public string SECOND_BLUETOOTH_DEVICE_ADDRESS;
-    
-        public string ACCEL_ZERO_OFFSET;
-        public string ACCELEROMETER_CALIBRATION;
-        public string GYRO_ZERO_OFFSET;
-        public string GYROSCOPE_CALIBRATION;
-        public string PROXIMITY_CALIBRATION;
-        public string PROXIMITY_CALIBRATION_EXTEND;
-        public string MAX98390L_TROOM;
-        public string MAX98390L_RDC;
+   
+        // Before Calibration
+        public string ACCEL_ZERO_OFFSET_BEFORE;
+        public string ACCELEROMETER_CALIBRATION_BEFORE;
+        public string GYRO_ZERO_OFFSET_BEFORE;
+        public string GYROSCOPE_CALIBRATION_BEFORE;
+        public string PROXIMITY_CALIBRATION_BEFORE;
+        public string PROXIMITY_CALIBRATION_EXTEND_BEFORE;
+        public string MAX98390L_TROOM_BEFORE;
+        public string MAX98390L_RDC_BEFORE;
+
+        // After Calibration
+        public string ACCEL_ZERO_OFFSET_AFTER;
+        public string ACCELEROMETER_CALIBRATION_AFTER;
+        public string GYRO_ZERO_OFFSET_AFTER;
+        public string GYROSCOPE_CALIBRATION_AFTER;
+        public string PROXIMITY_CALIBRATION_AFTER;
+        public string PROXIMITY_CALIBRATION_EXTEND_AFTER;
+        public string MAX98390L_TROOM_AFTER;
+        public string MAX98390L_RDC_AFTER;
 
         public string EID;
         public string WorkOrder;
@@ -118,6 +129,7 @@ namespace F002520
         public string AudioPAName;
         public string ConfigurationNumber;
         public string BarometerOffsetValue;
+        public string SoftwareVersionControl;
 
         // TestItem Result
         public string TestGSensorCalibration;

@@ -6,11 +6,16 @@
     <Item Name="TestInit" Enable="TRUE"/>
     <Item Name="TestPowerOn" Enable="TRUE"/>
     <Item Name="TestCheckDeviceReady" Enable="TRUE"/>
+    <Item Name="TestMoveDamBoardUp" Enable="TRUE"/>
     <Item Name="TestReadMFGData" Enable="TRUE"/>
-    <Item Name="TestCheckRFResult" Enable="FALSE"/>
+    <Item Name="TestCheckRFResult" Enable="FALSE"/>  
     <Item Name="TestCheckPreStation" Enable="TRUE"/>
+    <Item Name="TestAutoChangeOver" Enable="TRUE"/>
+    <Item Name="TestScreenOff" Enable="TRUE"/>
+    <Item Name="TestCheckSensorList" Enable="TRUE"/>
     <Item Name="TestGSensorCalibation" Enable="TRUE"/>
-    <Item Name="TestGYROSensorCalibration" Enable="TRUE"/>
+    <Item Name="TestGYROSensorCalibration" Enable="FALSE"/>
+    
     <Item Name="TestPSensorCalibration" Enable="TRUE"/>
     <Item Name="TestPSensorFunction" Enable="TRUE"/>
     <Item Name="TestAudioCalibration" Enable="TRUE"/>
@@ -32,8 +37,8 @@
 
     <TestCheckDeviceReady>
       <ReConnectTimes>3</ReConnectTimes>
-      
     </TestCheckDeviceReady>
+    
 
     <TestReadMFGData>
     </TestReadMFGData>
@@ -47,16 +52,40 @@
     <TestCheckPreStation>  
       <PreStationDeviceName>F002294_EDA51_RF_Fixture</PreStationDeviceName>
       <VarName>FailCode</VarName>
-      <VarValue>0</VarValue>
+      <VarTargetResult>0</VarTargetResult>
+      <URL>"http://hsm-mdcsws-ch3u.honeywell.com/MDCSWebService/MDCSService.asmx"</URL>
     </TestCheckPreStation>
+    
+    <TestAutoChangeOver>
+      <MESStation>SC</MESStation>
+      <ScanSheetStation>SC</ScanSheetStation>
+      <SWVersionControl>TRUE</SWVersionControl>
+    </TestAutoChangeOver>
+
+    <TestScreenOff>
+    </TestScreenOff>
+
+    <TestMoveDamBoardUp>
+      <Home>19.7</Home>
+      <Position>5.0</Position>
+    </TestMoveDamBoardUp>
+
+    <TestCheckSensorList>
+    </TestCheckSensorList>
 
     <TestGSensorCalibation>
+      <Cmd1>adb shell ssc_drva_test -sensor=accel -factory_test=2 -duration=10</Cmd1>
+      <Cmd2>adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET</Cmd2>
     </TestGSensorCalibation>
-
+    
     <TestGYROSensorCalibration>
+      <Cmd1>adb shell ssc_drva_test -sensor=gyro -factory_test=2 -duration=10</Cmd1>
+      <Cmd2>adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET</Cmd2>
     </TestGYROSensorCalibration>
 
     <TestPSensorCalibration>
+      <Cmd1>adb shell ssc_drva_test -sensor=proximity -factory_test=2 -duration=10</Cmd1>
+      <Cmd2>adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION_EXTEND</Cmd2>
     </TestPSensorCalibration>
 
     <TestPSensorFunction>

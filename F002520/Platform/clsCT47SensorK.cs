@@ -53,6 +53,26 @@ namespace F002520
             throw new NotImplementedException();
         }
 
+        public override bool TestAutoChangeOver()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool TestScreenOff()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool TestCheckSensorList()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool TestMoveDamBoardUp()
+        {
+            throw new NotImplementedException();
+        }
+
         public override bool TestGSensorCalibation()
         {
             throw new NotImplementedException();

@@ -36,17 +36,21 @@ namespace F002520
         }
 
         // Option.ini
-        private struct OptionData
+        public struct OptionData
         {     
             // TestMode
             public string TestMode;
 
             // AutoChangeOver
             public string AutoChangeOver;
-            public string ScanSheetStation;
+            //public string ScanSheetStation;
 
             // MES
             public string MES_Enable;
+            public string MES_Station;
+
+            // Software Version Control
+            //public string SWVersionControl;
 
             // XML
             public string TestItemXMLFile;
@@ -100,7 +104,7 @@ namespace F002520
         //private UnitDeviceInfo m_stUnitDeviceInfo = new UnitDeviceInfo();
 
         private List<string> m_TestItemList = new List<string>();
-        private OptionData m_stOptionData = new OptionData();
+        public OptionData m_stOptionData = new OptionData();
         private clsConfigHelper m_objXmlConfig = new clsConfigHelper();
         public clsEquipmentInitial m_objEquipmentInitial = new clsEquipmentInitial();
 
@@ -636,15 +640,13 @@ namespace F002520
             }
         }
 
-        private bool reportError(string sErrorMessage)
+        private bool ReportError(string sErrorMessage)
         {
             string sError = "";
 
             try
             {
-                //FrmMain.AutomationLog("PLC:Send FAIL result.");
-                //FrmMain.TraceLog("PLC:Return FAIL result...");
-
+                DisplayMessage("PLC:Send FAIL result.");
                 if (m_PLC.ErrorCodeReturn(clsConfigHelper.plcConfig.WriteDB, sErrorMessage, ref sError) == false)
                 {
                     //FrmMain.TraceLog("PLC:Return FAIL result fail.");
@@ -671,7 +673,7 @@ namespace F002520
             }
         }
 
-        private bool reportSuccess()
+        private bool ReportSuccess()
         {
             string sError = "";
 
@@ -732,6 +734,7 @@ namespace F002520
             }
             catch (Exception ex)
             {
+                string strr = ex.Message;
                 //FrmMain.TraceLog("ReadAutoStatus Exception:" + ex.Message);
                 return false;
             }
@@ -883,12 +886,12 @@ namespace F002520
                     return false;
                 }
 
-                m_stOptionData.ScanSheetStation = objOptionFile.ReadString("AutoChangeOver", "Station");
-                if (m_stOptionData.AutoChangeOver == "1" && string.IsNullOrWhiteSpace(m_stOptionData.ScanSheetStation))
-                {
-                    strErrorMessage = "Invalid ScanSheetStation Value: " + m_stOptionData.ScanSheetStation;
-                    return false;
-                }
+                //m_stOptionData.ScanSheetStation = objOptionFile.ReadString("AutoChangeOver", "Station");
+                //if (m_stOptionData.AutoChangeOver == "1" && string.IsNullOrWhiteSpace(m_stOptionData.ScanSheetStation))
+                //{
+                //    strErrorMessage = "Invalid ScanSheetStation Value: " + m_stOptionData.ScanSheetStation;
+                //    return false;
+                //}
 
                 #endregion
 
@@ -900,6 +903,24 @@ namespace F002520
                     strErrorMessage = "Invalid MES_Enable Value: " + m_stOptionData.MES_Enable;
                     return false;
                 }
+
+                m_stOptionData.MES_Station = objOptionFile.ReadString("MES", "Station");
+                if (m_stOptionData.MES_Enable == "1" && string.IsNullOrWhiteSpace(m_stOptionData.MES_Station))
+                {
+                    strErrorMessage = "Invalid MES Station Value: " + m_stOptionData.MES_Station;
+                    return false;
+                }
+
+                #endregion
+
+                #region SW Version Control
+
+                //m_stOptionData.SWVersionControl = objOptionFile.ReadString("SoftwareVersionControl", "Enable");
+                //if ((m_stOptionData.SWVersionControl != "0") && (m_stOptionData.SWVersionControl != "1"))
+                //{
+                //    strErrorMessage = "Invalid SWVersionControl Value: " + m_stOptionData.SWVersionControl;
+                //    return false;
+                //}
 
                 #endregion
 
@@ -952,11 +973,18 @@ namespace F002520
             { 
                 m_TestItemList.Clear();
                 foreach(string key in m_objXmlConfig.dicTestItemList.Keys)
-                {
+                {    
                     if (m_objXmlConfig.dicTestItemList[key] == true)
                     {
+                        if (key == "TestAutoChangeOver" && m_stOptionData.AutoChangeOver == "0")
+                        {
+                            continue;
+                        }
+
                         m_TestItemList.Add(key);
                     }
+
+
                 }
             }
             catch(Exception ex)
@@ -1006,8 +1034,7 @@ namespace F002520
 
                 if (m_stOptionData.AutoChangeOver == "0")
                 {
-                    // Manual Input ScanSheet
-                    // MES    
+                    // Manual Input ScanSheet 
                     if (m_stOptionData.MES_Enable == "1")
                     {
                         DisplayMessage("MES input.");
@@ -1018,7 +1045,14 @@ namespace F002520
                         }
 
                         DisplayMessage("EID:" + m_stMESData.EID);
-                        DisplayMessage("WorkOrder:" + m_stMESData.WorkOrder);    
+                        DisplayMessage("WorkOrder:" + m_stMESData.WorkOrder);
+
+                        // Check MES Data
+                        if (clsUploadMES.MESCheckData(m_stMESData.EID, m_stOptionData.MES_Station, m_stMESData.WorkOrder, ref strErrorMessage) == false)
+                        {
+                            DisplayMessage("Failed to Check MES Data.");
+                            return false;
+                        }
                     }
                   
                     // MCF
@@ -1470,6 +1504,7 @@ namespace F002520
             m_stTestSaveData.TestRecord.AudioPAName = "";
             m_stTestSaveData.TestRecord.ConfigurationNumber = "";
             m_stTestSaveData.TestRecord.BarometerOffsetValue = "0";
+            m_stTestSaveData.TestRecord.SoftwareVersionControl = "";
 
             // Result
             m_stTestSaveData.TestRecord.TestGSensorCalibration = "NA";
@@ -1681,7 +1716,7 @@ namespace F002520
             return;
         }
 
-        public void DisplayMessage(string str_Message, string level = "Info")
+        public void DisplayMessage(string str_Message, string level = "INFO")
         {
             try
             {
@@ -1711,6 +1746,10 @@ namespace F002520
 
                     case "FATAL":
                         Logger.Fatal(str_Message);
+                        break;
+
+                    case "NULL":
+                        // Show but not logging
                         break;
 
                     default:

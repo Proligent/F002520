@@ -29,7 +29,7 @@ namespace F002520
         static void Main()
         {
             g_strToolNumber = "F002520";
-            g_strToolRev = "A";
+            g_strToolRev = "01.01";
 
             mutex = new System.Threading.Mutex(false, "F002520 SensorK Fixture");
             if (!mutex.WaitOne(0, false))

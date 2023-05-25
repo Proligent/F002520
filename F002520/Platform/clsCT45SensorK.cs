@@ -5,6 +5,9 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Newtonsoft.Json;
+using SmartFactory.ExternalDLL;
+using System.IO;
 
 namespace F002520
 {
@@ -14,6 +17,13 @@ namespace F002520
         #region Variable
 
         private bool m_bIsWWAN = false;
+        private bool m_bIsTDKBaroSensor = false;
+        private double m_dCurrentDamBoardPosition = 0.0;
+
+        private const string PSensorName = "android.sensor.proximity";
+        private const string GSensorName = "android.sensor.accelerometer";
+        private const string BarometerName = "android.sensor.pressure";
+
         //clsMDCS m_objMDCS = new clsMDCS();
         private clsExecProcess clsProcess = new clsExecProcess();
         private UnitDeviceInfo m_stUnitDeviceInfo = new UnitDeviceInfo();
@@ -33,7 +43,6 @@ namespace F002520
                 strTestItem = MethodBase.GetCurrentMethod().Name;
 
                 InitUnitDeviceInfo();    
-
             }
             catch(Exception ex)
             {
@@ -110,11 +119,16 @@ namespace F002520
             try
             {
                 strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML
+
                 ReConnectTimes = int.Parse(GetTestItemParameter(strTestItem, "ReConnectTimes"));
                 if (ReConnectTimes > 3)
                 {
                     ReConnectTimes = 3;
                 }
+
+                #endregion
 
                 #region Check ADB Connected
 
@@ -240,47 +254,765 @@ namespace F002520
 
         public override bool TestCheckPreStation()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+            string strTestItem = "";
+            bool bRes = false;
+            bool bFlag = false;   
+            string strURL = "";
+            string PreStationDeviceName = "";
+            string PreStationVarName = "";
+            string PreStationVarTargetResult = "";
+           
+            string strSN = m_stUnitDeviceInfo.SN;
+
+            try
+            {
+                DisplayMessage("Start to Check Pre Station Result.");
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML
+
+                PreStationDeviceName = GetTestItemParameter(strTestItem, "PreStationDeviceName");
+                if (string.IsNullOrWhiteSpace(PreStationDeviceName))
+                {
+                    strErrorMessage = "Fail to get PreStationDeviceName value !";
+                    return false;
+                }
+                DisplayMessage("Device Name: " + PreStationDeviceName);
+
+                PreStationVarName = GetTestItemParameter(strTestItem, "VarName");
+                if (string.IsNullOrWhiteSpace(PreStationVarName))
+                {
+                    strErrorMessage = "Fail to get PreStationVarName value !";
+                    return false;
+                }
+
+                PreStationVarTargetResult = GetTestItemParameter(strTestItem, "VarTargetResult");
+                if (string.IsNullOrWhiteSpace(PreStationVarTargetResult))
+                {
+                    strErrorMessage = "Fail to get PreStationVarTargetResult value !";
+                    return false;
+                }
+
+                strURL = GetTestItemParameter(strTestItem, "URL");
+                if (string.IsNullOrWhiteSpace(strURL))
+                {
+                    strErrorMessage = "Fail to get MDCS URL value !";
+                    return false;
+                }
+
+                #endregion
+
+                #region Get MDCS Variable
+
+                clsMDCS obj_SaveMDCS = new clsMDCS();
+                obj_SaveMDCS.ServerName = strURL;
+                obj_SaveMDCS.DeviceName = PreStationDeviceName;
+                obj_SaveMDCS.UseModeProduction = true;
+
+                string strResult = "";
+                for (int i = 0; i < 3; i++)
+                {
+                    bRes = obj_SaveMDCS.GetMDCSVariable(PreStationDeviceName, PreStationVarName, strSN, ref strResult, ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bFlag = false;
+                        strErrorMessage = "GetMDCSVariable fail.";
+                        clsUtil.Dly(2.0);
+                        continue;
+                    }
+                    else
+                    {
+                        if (strResult != PreStationVarTargetResult)
+                        {
+                            bFlag = false;
+                            strErrorMessage = "Compare value fail. Result: " + strResult;
+                            clsUtil.Dly(1.0);
+                            continue;
+                        }
+                        else
+                        {
+                            bFlag = true;
+                            break;
+                        }
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                #endregion
+
+                DisplayMessage("Test Check Pre Station MDCS Result Sucessfully.");
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "TestCheckPreStation Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true;   
+        }
+
+        public override bool TestAutoChangeOver()
+        {
+            string strErrorMessage = "";
+            bool bRes = false;
+            bool bFlag = false;
+            string strCmd = "";
+            string strEID = "";
+            string strWorkOrder = "";
+            string strTestItem = ""; 
+            string MES_Enable = Program.g_mainForm.m_stOptionData.MES_Enable;
+            string MESStationName = ""; 
+            string ScanSheetStationName = "";
+            string SWVersionControl = "";
+
+            try
+            {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML
+
+                MESStationName = GetTestItemParameter(strTestItem, "MESStation");
+                if (string.IsNullOrWhiteSpace(MESStationName))
+                {
+                    strErrorMessage = "Fail to get MESStationName value !";
+                    return false;
+                }
+
+                ScanSheetStationName = GetTestItemParameter(strTestItem, "ScanSheetStation");
+                if (string.IsNullOrWhiteSpace(ScanSheetStationName))
+                {
+                    strErrorMessage = "Fail to get ScanSheetStationName value !";
+                    return false;
+                }
+
+                SWVersionControl = GetTestItemParameter(strTestItem, "SWVersionControl").ToUpper();
+                if ((SWVersionControl != "TRUE") && (SWVersionControl != "FALSE"))
+                {
+                    strErrorMessage = "Invalid SWVersionControl Value !";
+                    return false;
+                }
+
+                #endregion
+
+                #region Get Workorder Property
+
+                if (MES_Enable == "1")
+                {
+                    DisplayMessage("Get WorkOrder Property.");
+                    strCmd = "adb shell getprop persist.sys.WorkOrder";
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strWorkOrder);     
+                        if (bRes && !string.IsNullOrWhiteSpace(strWorkOrder))
+                        {
+                            bFlag = true;
+                            break;
+                        }
+                        else
+                        {
+                            bFlag = false;
+                            clsUtil.Dly(1.0);
+                            continue;
+                        }
+                    }
+                    if (bFlag == false)
+                    {
+                        strErrorMessage = "Get WorkOrder property fail.";
+                        return false;
+                    }
+                    m_stUnitDeviceInfo.WorkOrder = strWorkOrder;
+                    DisplayMessage("WorkOrder: " + strWorkOrder);    
+                }
+                else
+                {
+                    DisplayMessage("Skip to Get WorkOrder Property.");
+                }
+
+                #endregion
+
+                #region Get EID Property
+
+                if (MES_Enable == "1")
+                {
+                    DisplayMessage("Get EID Property.");
+                    strCmd = "adb shell getprop persist.sys.FLASH";
+
+                    for (int i = 0; i < 3; i++)
+                    {
+                        bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strEID);  
+                        if (bRes && !string.IsNullOrWhiteSpace(strEID))
+                        {
+                            bFlag = true;
+                            break;
+                        }
+                        else
+                        {
+                            bFlag = false;
+                            clsUtil.Dly(1.0);
+                            continue;
+                        }
+                    }
+                    if (bFlag == false)
+                    {
+                        strErrorMessage = "Get EID property fail.";
+                        return false;
+                    }
+                    m_stUnitDeviceInfo.EID = strEID;
+                    DisplayMessage("EID: " + strEID);     
+                }
+                else
+                {
+                    DisplayMessage("Skip to Get EID Property.");
+                }
+
+                #endregion
+
+                #region Check MES Data
+
+                if (MES_Enable == "1")
+                {
+                    DisplayMessage("Check MES Data");
+                    if (clsUploadMES.MESCheckData(strEID, MESStationName, strWorkOrder, ref strErrorMessage) == false)
+                    {
+                        DisplayMessage("Failed to Check MES Data.");
+                        return false;
+                    }
+
+                    DisplayMessage("Check MES Data Successful.");
+                }
+                else
+                {
+                    DisplayMessage("Skip to Check MES Data");
+                }
+
+                #endregion
+
+                #region Get ScanSheet
+
+
+                #endregion
+
+                #region Check SW Version
+
+                if (SWVersionControl == "TRUE")
+                {
+                    DisplayMessage("Check Software Version.");
+                    if (SWVersionCheck(ref strErrorMessage) == false)
+                    {
+                        MessageBox.Show("Software Vesion Not Matched !!!");
+                        return false;
+                    }
+                }
+                else
+                {
+                    DisplayMessage("Skip to Check SW Version");
+                }
+
+                #endregion
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
+        }
+
+        public override bool TestScreenOff()
+        {
+            string strErrorMessage = "";
+            string strTestItem = "";  
+            bool bFlag = false;
+        
+            try
+            {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                for (int i = 0; i < 5; i++)
+                {
+                    if (ScreenOffAction(ref strErrorMessage) == false)
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(2.0);
+                        continue;                   }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    strErrorMessage = "Fail to control screen off, " + strErrorMessage;
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                DisplayMessage("Test Control Screen Off Successful.");
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestScreenOff Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
+        }
+
+        public override bool TestMoveDamBoardUp()
+        {
+            string strErrorMessage = "";
+            string strTestItem = "";     
+            double dHome = 0.0;
+            double dPosition = 0.0;
+
+            try
+            {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML
+
+                dHome = Convert.ToDouble(GetTestItemParameter(strTestItem, "Home"));
+                dPosition = Convert.ToDouble(GetTestItemParameter(strTestItem, "Position"));
+                DisplayMessage("Home: " + dHome.ToString());
+                DisplayMessage("Position: " + dPosition.ToString());
+
+                #endregion
+
+                m_dCurrentDamBoardPosition = 0.0;
+                if (SetDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestMoveDamBoardUp Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
+        }
+
+        public override bool TestCheckSensorList()
+        {
+            string strErrorMessage = "";
+            string strTestItem = "";
+            bool bFlag = false;
+
+            try
+            {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (CheckSensorList(ref strErrorMessage) == false)
+                    {
+                        bFlag = false;
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;         
+                    }
+                }
+                if (bFlag == false)
+                {
+                    strErrorMessage = "Fail to check sensor list, " + strErrorMessage;
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestCheckSensorList Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestGSensorCalibation()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+            string strTestItem = "";
+            bool bRes = false;
+            bool bFlag = false;
+            string strRunCmd = "";
+            string strValueCmd = "";
+            string strResult = "";
+            string ACCEL_ZERO_OFFSET_BEFORE = m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_BEFORE;
+            string ACCEL_ZERO_OFFSET_AFTER = ""; 
+
+            try
+            {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML 
+
+                // Calibration CMD
+                strRunCmd = GetTestItemParameter(strTestItem, "Cmd1");
+                if (string.IsNullOrWhiteSpace(strRunCmd))
+                {
+                    strErrorMessage = "Fail to parse Cmd1 parameter !";
+                    return false;
+                }
+                DisplayMessage("Param CMD1: " + strRunCmd);
+
+                // Get Offset CMD
+                strValueCmd = GetTestItemParameter(strTestItem, "Cmd2");
+                if (string.IsNullOrWhiteSpace(strValueCmd))
+                {
+                    strErrorMessage = "Fail to parse Cmd2 parameter !";
+                    return false;
+                }
+                DisplayMessage("Param CMD2: " + strValueCmd);
+
+                #endregion
+
+                DisplayMessage("Before GSensor Calibration, ACCEL_ZERO_OFFSET=" + ACCEL_ZERO_OFFSET_BEFORE);
+
+                #region GSensor(ACC) Calibration
+
+                for (int i = 0; i < 3; i++)
+                {
+                    DisplayMessage(string.Format("LOOP_{0}: Do GSensor Calibration.", i.ToString()));
+                    DisplayMessage("Run CMD: " + strRunCmd);
+
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);                 
+                    DisplayMessage("Result: " + strResult);  
+                    if (strResult.IndexOf("calibration PASS", StringComparison.OrdinalIgnoreCase) == -1)
+                    {
+                        strErrorMessage = "Run Cmd to do GSensor Calibration fail !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+
+                    #region Compare Before and After Value
+
+                    //string cmd = "adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET";
+                    bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
+                    DisplayMessage("Run CMD: " + strValueCmd);
+                    DisplayMessage("After GSensor Calibration, ACCEL_ZERO_OFFSET=" + strResult);
+                    ACCEL_ZERO_OFFSET_AFTER = strResult;
+
+                    if (strResult.Contains("000000000000000000000000"))  // Equal to default value
+                    {
+                        strErrorMessage = "GSensor calibration fail, ACCEL_ZERO_OFFSET still default value !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    if (ACCEL_ZERO_OFFSET_AFTER == ACCEL_ZERO_OFFSET_BEFORE)
+                    {
+                        strErrorMessage = "Before and After calibration, ACCEL_ZERO_OFFSET value not changed !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;           
+                    }
+
+                    #endregion
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestGSensorCalibation Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestGYROSensorCalibration()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+            string strTestItem = "";
+            bool bRes = false;
+            bool bFlag = false;
+            string strRunCmd = "";
+            string strValueCmd = "";
+            string strResult = "";
+            string GYRO_ZERO_OFFSET_BEFORE = m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_BEFORE;
+            string GYRO_ZERO_OFFSET_AFTER = ""; 
+
+            try
+            {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML
+
+                // Calibration CMD
+                strRunCmd = GetTestItemParameter(strTestItem, "Cmd1");
+                if (string.IsNullOrWhiteSpace(strRunCmd))
+                {
+                    strErrorMessage = "Fail to parse Cmd1 parameter !";
+                    return false;
+                }
+                DisplayMessage("Param CMD1: " + strRunCmd);
+
+                // Get Offset CMD
+                strValueCmd = GetTestItemParameter(strTestItem, "Cmd2");
+                if (string.IsNullOrWhiteSpace(strValueCmd))
+                {
+                    strErrorMessage = "Fail to parse Cmd2 parameter !";
+                    return false;
+                }
+                DisplayMessage("Param CMD2: " + strValueCmd);
+
+                #endregion
+
+                DisplayMessage("Before GYRO Sensor Calibration, GYRO_ZERO_OFFSET=" + GYRO_ZERO_OFFSET_BEFORE);
+
+                #region GYRO Sensor Calibration
+
+                for (int i = 0; i < 3; i++)
+                {
+                    DisplayMessage(string.Format("LOOP_{0}: Do GYRO Sensor Calibration.", i.ToString()));
+                    DisplayMessage("Run CMD: " + strRunCmd);
+
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);
+                    DisplayMessage("Result: " + strResult);
+                    if (strResult.IndexOf("PASS", StringComparison.OrdinalIgnoreCase) == -1)
+                    {
+                        strErrorMessage = "Run Cmd to do GYRO Sensor Calibration fail !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+
+                    #region Compare Before and After Value
+
+                    //string cmd = "adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET";
+                    bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
+                    DisplayMessage("Run CMD: " + strValueCmd);
+                    DisplayMessage("After GYRO Sensor Calibration, GYRO_ZERO_OFFSET=" + strResult);
+                    GYRO_ZERO_OFFSET_AFTER = strResult;
+
+                    if (strResult.Contains("000000000000000000000000"))  // Equal to default value
+                    {
+                        strErrorMessage = "GYRO Sensor calibration fail, GYRO_ZERO_OFFSET still default value !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    if (GYRO_ZERO_OFFSET_AFTER == GYRO_ZERO_OFFSET_BEFORE)
+                    {
+                        strErrorMessage = "Before and After calibration, GYRO_ZERO_OFFSET value not changed !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+
+                    #endregion
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestGYROSensorCalibration Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestPSensorCalibration()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+            string strTestItem = "";
+            bool bRes = false;
+            bool bFlag = false;
+            string strRunCmd = "";
+            string strValueCmd = "";
+            string strResult = "";
+            string PROXIMITY_CALIBRATION_EXTEND_BEFORE = m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_BEFORE;
+            string PROXIMITY_CALIBRATION_EXTEND_AFTER = ""; 
+
+            try
+            {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML
+
+                // Calibration CMD
+                strRunCmd = GetTestItemParameter(strTestItem, "Cmd1");
+                if (string.IsNullOrWhiteSpace(strRunCmd))
+                {
+                    strErrorMessage = "Fail to parse Cmd1 parameter !";
+                    return false;
+                }
+                DisplayMessage("Param CMD1: " + strRunCmd);
+
+                // Get Offset CMD
+                strValueCmd = GetTestItemParameter(strTestItem, "Cmd2");
+                if (string.IsNullOrWhiteSpace(strValueCmd))
+                {
+                    strErrorMessage = "Fail to parse Cmd2 parameter !";
+                    return false;
+                }
+                DisplayMessage("Param CMD2: " + strValueCmd);
+
+                #endregion
+
+                DisplayMessage("Before Proximity Sensor Calibration, PROXIMITY_CALIBRATION_EXTEND=" + PROXIMITY_CALIBRATION_EXTEND_BEFORE);
+
+
+
+
+
+
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestPSensorFunction()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+
+            try
+            {
+
+
+
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestAudioCalibration()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+
+            try
+            {
+
+
+
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestBarometerSensorOffset()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+
+            try
+            {
+
+
+
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestReboot()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+
+            try
+            {
+
+
+
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         public override bool TestEnd()
         {
-            throw new NotImplementedException();
+            string strErrorMessage = "";
+
+            try
+            {
+
+
+
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                return false;
+            }
+
+            DisplayMessage("Completed !!!");
+            return true; 
         }
 
         #endregion
@@ -308,7 +1040,7 @@ namespace F002520
 
         #region UI
 
-        private void DisplayMessage(string message, string level = "Info")
+        private void DisplayMessage(string message, string level = "INFO")
         {
             Program.g_mainForm.DisplayMessage(message, level);
             return;
@@ -335,6 +1067,33 @@ namespace F002520
             double dValue = 0.0;
             Program.g_mainForm.m_objEquipmentInitial.m_objNIDAQ.GetAnalog(iAI, 10, ref dValue, 0.1);
             return dValue;
+        }
+
+        #endregion
+
+        #region Motor
+
+        private bool OMRONMoveAbsolute(byte slave, int pos, int vel, uint acceleration, uint deceleration, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+
+            try
+            {
+                bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.MoveAbsolute(slave, pos, vel, acceleration, deceleration, ref strErrorMessage);
+                if (bRes == false)
+                {
+                    strErrorMessage = "Fail to move absolute position." + strErrorMessage;
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;  
         }
 
         #endregion
@@ -602,49 +1361,49 @@ namespace F002520
                     // ACCEL_ZERO_OFFSET
                     else if (key == "ACCEL_ZERO_OFFSET")
                     {
-                        m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("ACCEL_ZERO_OFFSET={0}", dic_MFGData[key].ToUpper());
                     }
                     // ACCELEROMETER_CALIBRATION
                     else if (key == "ACCELEROMETER_CALIBRATION")
                     {
-                        m_stUnitDeviceInfo.ACCELEROMETER_CALIBRATION = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.ACCELEROMETER_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("ACCELEROMETER_CALIBRATION={0}", dic_MFGData[key].ToUpper());
                     }
                     // GYRO_ZERO_OFFSET
                     else if (key == "GYRO_ZERO_OFFSET")
                     {
-                        m_stUnitDeviceInfo.GYRO_ZERO_OFFSET = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("GYRO_ZERO_OFFSET={0}", dic_MFGData[key].ToUpper());
                     }
                     // GYROSCOPE_CALIBRATION
                     else if (key == "GYROSCOPE_CALIBRATION")
                     {
-                        m_stUnitDeviceInfo.GYROSCOPE_CALIBRATION = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.GYROSCOPE_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("GYROSCOPE_CALIBRATION={0}", dic_MFGData[key].ToUpper());
                     }
                     // PROXIMITY_CALIBRATION
                     else if (key == "PROXIMITY_CALIBRATION")
                     {
-                        m_stUnitDeviceInfo.PROXIMITY_CALIBRATION = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("PROXIMITY_CALIBRATION={0}", dic_MFGData[key].ToUpper());
                     }
                     // PROXIMITY_CALIBRATION_EXTEND
                     else if (key == "PROXIMITY_CALIBRATION_EXTEND")
                     {
-                        m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("PROXIMITY_CALIBRATION_EXTEND={0}", dic_MFGData[key].ToUpper());
                     }
                     // MAX98390L_TROOM
                     else if (key == "MAX98390L_TROOM")
                     {
-                        m_stUnitDeviceInfo.MAX98390L_TROOM = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.MAX98390L_TROOM_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("MAX98390L_TROOM={0}", dic_MFGData[key].ToUpper());
                     }
                     // MAX98390L_RDC
                     else if (key == "MAX98390L_RDC")
                     {
-                        m_stUnitDeviceInfo.MAX98390L_RDC = dic_MFGData[key].ToUpper();
+                        m_stUnitDeviceInfo.MAX98390L_RDC_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("MAX98390L_RDC={0}", dic_MFGData[key].ToUpper());
                     }
                 }
@@ -667,7 +1426,9 @@ namespace F002520
                     strErrorMessage = "Read mfg data fail: Invalid SKU.";
                     return false;
                 }
-                // 截取 Model
+                // Truncate Model
+                int index = strSKU.IndexOf("-");
+                string skuModel = strSKU.Substring(0, index);
 
                 // MODEL
                 string strModel = m_stUnitDeviceInfo.Model;
@@ -675,7 +1436,12 @@ namespace F002520
                 {
                     strErrorMessage = "Read mfg data fail: Invalid Model.";
                     return false;
-                }  
+                }
+                if (strModel != skuModel)
+                {
+                    strErrorMessage = "Read MDB Model Not Match SKU Model !!!";
+                    return false;
+                }
                 if (strModel.Contains(Program.g_mainForm.m_strModel) == false)
                 {
                     MessageBox.Show("The Product Not Match the Production Line That You Selected !!!");
@@ -741,6 +1507,417 @@ namespace F002520
 
             return true;
         }
+
+        private bool SWVersionCheck(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            string SoftwareNumber = Program.g_strToolNumber.ToUpper();
+            string SoftwareVersion = Program.g_strToolRev.ToUpper();
+            string strSKU = m_stUnitDeviceInfo.SKU;
+            //string strKeyWord = "";
+
+            try
+            {
+                //bool bFlag = false;
+                ApiResult result = ScanSheet.Get(strSKU);
+                if (result.Status == 0)
+                {
+                    //string Station = "";
+                    //string BarcodeValue = "";
+                    //string[] strArray;
+                    string sJasonStr = JsonConvert.SerializeObject(result);
+                    ScanSheetRes res = JsonConvert.DeserializeObject<ScanSheetRes>(sJasonStr);
+
+                    string strTestSoftwareControl = "";
+                    string strTestSoftwareNumber = "";
+                    string strTestSoftwareRev = "";
+
+                    #region Get Data
+
+                    if (res.Data.Count > 0)
+                    {
+                        var item = res.Data[0];
+                        strTestSoftwareControl = item.TestSoftwareRevControl.ToString().Trim();
+                        strTestSoftwareNumber = item.TestSoftware.ToString().Trim().ToUpper();
+                        strTestSoftwareRev = item.TestSoftwareRev.ToString().Trim().ToUpper();
+                    }
+                    else
+                    {
+                        strErrorMessage = "Don't found any ScanSheet. SKU:" + strSKU;
+                        return false;
+                    }
+
+                    #endregion
+
+                    #region Check Data
+
+                    if (string.IsNullOrWhiteSpace(strTestSoftwareControl) || string.IsNullOrWhiteSpace(strTestSoftwareNumber) || string.IsNullOrWhiteSpace(strTestSoftwareRev))
+                    {
+                        strErrorMessage = "Get ScanSheet Data fail.";
+                        return false;
+                    }
+
+                    frmMain.m_stTestSaveData.TestRecord.SoftwareVersionControl = strTestSoftwareControl;
+
+                    if (strTestSoftwareControl == "1")
+                    {
+                        // Check
+                        if (strTestSoftwareNumber != SoftwareNumber)
+                        {
+                            strErrorMessage = "Software Number Not Matched !!!";
+                            return false;
+                        }
+                        if (strTestSoftwareRev != SoftwareVersion)
+                        {
+                            strErrorMessage = "Software Version Not Matched !!!";
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // Not Check
+                        DisplayMessage("TestSoftwareRevControl = 0, No Need to Check Software Version ...");
+                    }
+
+                    #endregion
+                }
+                else
+                {
+                    strErrorMessage = string.Format("FailMessage:{0}, Status:{1}", result.Message, result.Status.ToString());
+                    DisplayMessage("Get ScanSheet fail." + strErrorMessage);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ScreenOffAction(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+            string strCmd = "";
+            string strResult = "";
+
+            try
+            {
+                DisplayMessage("Check Screen Status First.");
+                strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
+
+                bRes = clsProcess.ExcuteCmd(strCmd, 2000, ref strResult);
+                if (strResult.Contains("state=OFF"))
+                {
+                    DisplayMessage("The Screen Already Turn off !");
+                    return true;
+                }
+
+                // The Screen is ON
+                DisplayMessage("The Screen Currently is ON, Ready to Turn Off");
+                strCmd = "adb shell input keyevent 26";
+              
+                // Turn off
+                bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strResult);
+                DisplayMessage("Send Cmd: " + strCmd);
+
+                // Check status
+                strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
+                DisplayMessage("Check Screen Status, Send Cmd: " + strCmd);
+                bRes = clsProcess.ExcuteCmd(strCmd, 2000, ref strResult);
+
+                DisplayMessage("Response: " + strResult);
+                if (strResult.Contains("state=OFF"))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception: " + ex.Message;
+                return false;
+            }
+        }
+
+        private bool ScreenOnAction(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+            string strCmd = "";
+            string strResult = "";
+
+            try
+            {
+                DisplayMessage("Check Screen Status First.");
+                strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
+
+                bRes = clsProcess.ExcuteCmd(strCmd, 2000, ref strResult);
+                if (strResult.Contains("state=ON"))
+                {
+                    DisplayMessage("The Screen Already Turn ON !");
+                    return true;
+                }
+
+                // The Screen is Off
+                DisplayMessage("The Screen Currently is Off, Ready to Turn On");
+                strCmd = "adb shell input keyevent 26";
+               
+                // Turn on
+                bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strResult);
+                DisplayMessage("Send Cmd: " + strCmd);
+
+                // Check status
+                strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
+                DisplayMessage("Check Screen Status, Send Cmd: " + strCmd);
+                bRes = clsProcess.ExcuteCmd(strCmd, 2000, ref strResult);
+
+                DisplayMessage("Response: " + strResult);
+                if (strResult.Contains("state=ON"))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Exception: " + ex.Message;
+                return false;
+            }
+        }
+
+        private bool SetDamBoardUp(double dDistance, double dHome, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+
+            try
+            {
+                int iStep = 0;
+                iStep = (int)((dHome - dDistance) / 0.012 *10);
+
+                if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
+                {
+                    return false;
+                }
+
+                m_dCurrentDamBoardPosition = dDistance;      
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckSensorList(ref string strErrorMessage)
+        { 
+            strErrorMessage = "";
+            bool bFlag = false;
+            bool bPSensor = false;
+            bool bGSensor = false;
+            bool bBarometerSensor = false;
+
+            string strFilePath = "";
+
+            try
+            {
+                #region Check ADB Connect
+
+                if (CheckADBConnected(10) == false)
+                {
+                    strErrorMessage = "Check adb connect failed !!!";               
+                    return false;
+                }
+
+                #endregion
+
+                #region Delete Local File
+
+                strFilePath = Application.StartupPath + @"\sensor_list";
+                if (File.Exists(strFilePath))
+                {
+                    File.Delete(strFilePath);
+                    clsUtil.Dly(0.5);
+                    if (File.Exists(strFilePath))
+                    {
+                        strErrorMessage = "Delete Local Sensor List File fail.";
+                        return false;
+                    }
+                }
+
+                #endregion
+
+                #region Get Sensor List
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (GetSensorList(ref strErrorMessage) == false)
+                    {
+                        strErrorMessage = "Fail to execute GetSensorList.bat";
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+
+                    clsUtil.Dly(2.0);
+                    // Check Local sensor_list file
+                    if (File.Exists(strFilePath) == false)
+                    {
+                        clsUtil.Dly(2.0);
+                        if (File.Exists(strFilePath) == false)
+                        {
+                            strErrorMessage = "Fail to check local sensor_list file exist.";
+                            bFlag = false;
+                            continue;
+                        }         
+                    }   
+      
+                    bFlag = true;
+                    break;      
+                }
+                if (bFlag == false)
+                {
+                    return false;
+                }
+
+                #endregion
+
+                #region Check Sensor Whether Exist In Sensor_List
+
+                if (CheckSensorExist(strFilePath, ref bPSensor, ref bGSensor, ref bBarometerSensor, ref strErrorMessage) == false)
+                {
+                    return false;
+                }
+
+                if (bPSensor == false)
+                {
+                    strErrorMessage = "This device doesn't have PSensor !!!";
+                    return false;
+                }
+                if (bGSensor == false)
+                {
+                    strErrorMessage = "This device doesn't have GSensor !!!";
+                    return false;
+                }
+                if (bBarometerSensor == false)
+                {
+                    strErrorMessage = "This device doesn't have Barometer Sensor !!!";
+                    return false;
+                }
+
+                #endregion
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true; 
+        }
+
+        private bool GetSensorList(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+            string strResult = "";
+            string batchFile = "GetSensorList.bat";
+
+            try
+            {
+                DisplayMessage("Execute Batch File: " + batchFile);
+                bRes = clsProcess.ExcuteCmd(batchFile, 2000, ref strResult);
+                if (strResult.Contains("sensor_list") == false)
+                {
+                    strErrorMessage = "Fail to get the sensor_list";
+                    return false;
+                }    
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckSensorExist(string strFilePath, ref bool IsPSensorExist, ref bool IsGSensorExist, ref bool IsBaroSensorExist, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            IsPSensorExist = false;
+            IsGSensorExist = false;
+            IsBaroSensorExist = false;
+
+            try
+            { 
+                DisplayMessage("Check PSensor and GSensor Exist");
+                string[] FileArray = File.ReadAllLines(strFilePath);
+
+                foreach (var line in FileArray)
+                {
+                    if (line.Contains(PSensorName))
+                    {
+                        IsPSensorExist = true;
+                        break;     
+                    } 
+                }
+
+                foreach (var line in FileArray)
+                {
+                    if (line.Contains(GSensorName))
+                    {
+                        IsGSensorExist = true;
+                        break;
+                    }
+                }
+
+                // Check Barometer Vendor Whether TDK
+                string Line = "";
+                string Vendor = "";
+                for (int i = 0; i < FileArray.Length; i++)
+                {
+                    Line = FileArray[i];
+                    if (Line.Contains(BarometerName))
+                    {
+                        IsBaroSensorExist = true;
+
+                        Vendor = FileArray[i+1];
+                        if (Vendor.Contains("TDK"))
+                        {
+                            m_bIsTDKBaroSensor = true;
+                            break;
+                        }
+                    }
+                } 
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+
+
+
+
+
+
+
 
 
 

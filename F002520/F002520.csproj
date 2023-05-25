@@ -197,6 +197,9 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="GetSensorList.bat">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Reg\DeleteCOMNameArbiter.reg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -248,9 +251,11 @@
     </Content>
     <Content Include="TestConfig\TestItem\CT47\CT47_SensorK_TestItem.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
     <Content Include="TestConfig\TestItem\CW45\CW45_SensorK_TestItem.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </Content>
     <Content Include="Resources\close_20.png" />
     <Content Include="Resources\HoneywellLog_128.png" />
