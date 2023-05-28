@@ -96,6 +96,7 @@ namespace F002520
 
         private string m_strSKU = "";
         public string m_strModel = "";
+        private ModelID m_Type;
         public static string m_strTestItemXMLFile = "";
         public static string m_strEquipmentXMLFile = "";
 
@@ -823,10 +824,15 @@ namespace F002520
                     return false;
                 }
 
-                strModel = strSKU.Substring(0, iIndex).Trim().ToUpper();
+                strModel = strSKU.Substring(0, iIndex).ToUpper();
                 if (strModel.Contains("L"))
                 {
-                    iIndex = strModel.IndexOf("L");
+                    iIndex = strModel.IndexOf("L"); 
+                    strModel = strModel.Substring(0, iIndex);
+                }
+                if (strModel.Contains("X"))
+                {
+                    iIndex = strModel.IndexOf("X");
                     strModel = strModel.Substring(0, iIndex);
                 }
             }
@@ -1043,7 +1049,6 @@ namespace F002520
                             DisplayMessage("Failed to MES input.");
                             return false;
                         }
-
                         DisplayMessage("EID:" + m_stMESData.EID);
                         DisplayMessage("WorkOrder:" + m_stMESData.WorkOrder);
 
@@ -1068,16 +1073,37 @@ namespace F002520
                 else
                 {
                     // AutoChangeOver
-                    #region Select Production Line
-
                     if (SelectLine() == false)
                     {
                         strErrorMessage = "Failed to select production line.";
                         return false;
                     }
                     DisplayMessage("Production Line: " + m_strModel);
+                }
 
-                    #endregion
+                #endregion
+
+                #region Model Type
+
+                if (m_strModel.Contains("CT40"))
+                {
+                    m_Type = ModelID.CT40;
+                }
+                else if (m_strModel.Contains("CT45"))
+                {
+                    m_Type = ModelID.CT45;
+                }
+                else if (m_strModel.Contains("CT47"))
+                {
+                    m_Type = ModelID.CT47;
+                }
+                else if (m_strModel.Contains("CW45"))
+                {
+                    m_Type = ModelID.CW45;
+                }
+                else
+                {
+                    m_Type = ModelID.NULL;
                 }
 
                 #endregion
@@ -1280,7 +1306,7 @@ namespace F002520
                 return false;
             }
 
-            clsSensorKBase sensorKTest = clsSensorKTestFactory.CreateSensorKTest(m_strModel);
+            clsSensorKBase sensorKTest = clsSensorKTestFactory.CreateSensorKTest(m_Type);
 
             try
             {
@@ -1635,7 +1661,7 @@ namespace F002520
                     return string.Empty;
                 }
 
-                strValue = m_objXmlConfig.dicTestItemParamList[strItem][strName].ToString();
+                strValue = m_objXmlConfig.dicTestItemParamList[strItem][strName].ToString().Trim();
 
                 if (string.IsNullOrWhiteSpace(strValue))
                 {

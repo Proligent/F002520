@@ -15,7 +15,6 @@
     <Item Name="TestCheckSensorList" Enable="TRUE"/>
     <Item Name="TestGSensorCalibation" Enable="TRUE"/>
     <Item Name="TestGYROSensorCalibration" Enable="FALSE"/>
-    
     <Item Name="TestPSensorCalibration" Enable="TRUE"/>
     <Item Name="TestPSensorFunction" Enable="TRUE"/>
     <Item Name="TestAudioCalibration" Enable="TRUE"/>
@@ -74,24 +73,30 @@
     </TestCheckSensorList>
 
     <TestGSensorCalibation>
-      <Cmd1>adb shell ssc_drva_test -sensor=accel -factory_test=2 -duration=10</Cmd1>
-      <Cmd2>adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET</Cmd2>
+      <CalibrationCmd>adb shell ssc_drva_test -sensor=accel -factory_test=2 -duration=10</CalibrationCmd>
+      <GetMDBCmd>adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET</GetMDBCmd>
     </TestGSensorCalibation>
     
     <TestGYROSensorCalibration>
-      <Cmd1>adb shell ssc_drva_test -sensor=gyro -factory_test=2 -duration=10</Cmd1>
-      <Cmd2>adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET</Cmd2>
+      <CalibrationCmd>adb shell ssc_drva_test -sensor=gyro -factory_test=2 -duration=10</CalibrationCmd>
+      <GetMDBCmd>adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET</GetMDBCmd>
     </TestGYROSensorCalibration>
 
     <TestPSensorCalibration>
-      <Cmd1>adb shell ssc_drva_test -sensor=proximity -factory_test=2 -duration=10</Cmd1>
-      <Cmd2>adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION_EXTEND</Cmd2>
+      <CalibrationCmd>adb shell ssc_drva_test -sensor=proximity -factory_test=2 -duration=10</CalibrationCmd>
+      <GetMDBCmd>adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION_EXTEND</GetMDBCmd>
     </TestPSensorCalibration>
 
     <TestPSensorFunction>
+      <NearPosition>2.0</NearPosition>
+      <FarPosition>15.0</FarPosition>
+      <GetPSensorLog>adb shell sns_hal_batch -s 8 -r 100 -sr 100 -d 3</GetPSensorLog>
     </TestPSensorFunction>
 
     <TestAudioCalibration>
+      <GetPAName>adb shell getprop ro.vendor.hon.audioPA.name</GetPAName>
+      <CalibrationCmd>adb shell sh /system/bin/max98390_calibration.sh</CalibrationCmd>
+      <GetMDBCmd>adb shell mfg-tool -g MAX98390L_RDC</GetMDBCmd>
     </TestAudioCalibration>
 
     <TestBarometerSensorOffset>

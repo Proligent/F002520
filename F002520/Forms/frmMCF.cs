@@ -70,7 +70,7 @@ namespace F002520
             //}
 
             // SKU
-            m_strSKU = this.txtBoxSKU.Text.Trim();
+            m_strSKU = this.txtBoxSKU.Text.Trim().ToUpper();
             if (m_strSKU.Length <= 0)
             {
                 return;

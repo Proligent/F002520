@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Newtonsoft.Json;
 using SmartFactory.ExternalDLL;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace F002520
 {
@@ -24,6 +25,7 @@ namespace F002520
         private const string GSensorName = "android.sensor.accelerometer";
         private const string BarometerName = "android.sensor.pressure";
 
+      
         //clsMDCS m_objMDCS = new clsMDCS();
         private clsExecProcess clsProcess = new clsExecProcess();
         private UnitDeviceInfo m_stUnitDeviceInfo = new UnitDeviceInfo();
@@ -581,8 +583,8 @@ namespace F002520
                 strTestItem = MethodBase.GetCurrentMethod().Name;
 
                 #region Parse XML
-
-                dHome = Convert.ToDouble(GetTestItemParameter(strTestItem, "Home"));
+  
+                dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
                 dPosition = Convert.ToDouble(GetTestItemParameter(strTestItem, "Position"));
                 DisplayMessage("Home: " + dHome.ToString());
                 DisplayMessage("Position: " + dPosition.ToString());
@@ -590,7 +592,7 @@ namespace F002520
                 #endregion
 
                 m_dCurrentDamBoardPosition = 0.0;
-                if (SetDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
                 {
                     return false;
                 }
@@ -692,8 +694,8 @@ namespace F002520
                     DisplayMessage(string.Format("LOOP_{0}: Do GSensor Calibration.", i.ToString()));
                     DisplayMessage("Run CMD: " + strRunCmd);
 
-                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);                 
-                    DisplayMessage("Result: " + strResult);  
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);   // 15s              
+                    DisplayMessage("Result: \r\n" + strResult);  
                     if (strResult.IndexOf("calibration PASS", StringComparison.OrdinalIgnoreCase) == -1)
                     {
                         strErrorMessage = "Run Cmd to do GSensor Calibration fail !!!";
@@ -709,6 +711,7 @@ namespace F002520
                     DisplayMessage("Run CMD: " + strValueCmd);
                     DisplayMessage("After GSensor Calibration, ACCEL_ZERO_OFFSET=" + strResult);
                     ACCEL_ZERO_OFFSET_AFTER = strResult;
+                    m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
 
                     if (strResult.Contains("000000000000000000000000"))  // Equal to default value
                     {
@@ -797,8 +800,8 @@ namespace F002520
                     DisplayMessage(string.Format("LOOP_{0}: Do GYRO Sensor Calibration.", i.ToString()));
                     DisplayMessage("Run CMD: " + strRunCmd);
 
-                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);
-                    DisplayMessage("Result: " + strResult);
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);    // 15s
+                    DisplayMessage("Result: \r\n" + strResult);
                     if (strResult.IndexOf("PASS", StringComparison.OrdinalIgnoreCase) == -1)
                     {
                         strErrorMessage = "Run Cmd to do GYRO Sensor Calibration fail !!!";
@@ -814,6 +817,7 @@ namespace F002520
                     DisplayMessage("Run CMD: " + strValueCmd);
                     DisplayMessage("After GYRO Sensor Calibration, GYRO_ZERO_OFFSET=" + strResult);
                     GYRO_ZERO_OFFSET_AFTER = strResult;
+                    m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_AFTER = strResult.ToUpper();
 
                     if (strResult.Contains("000000000000000000000000"))  // Equal to default value
                     {
@@ -864,8 +868,13 @@ namespace F002520
             string strRunCmd = "";
             string strValueCmd = "";
             string strResult = "";
+
+            string NEAR_THRESHOLD = "";
+            string FAR_THRESHOLD = "";
+            string DEFAULT_NEAR_THRESHOLD = "800.000000";
+            string DEFAULT_FAR_THRESHOLD = "600.000000";
             string PROXIMITY_CALIBRATION_EXTEND_BEFORE = m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_BEFORE;
-            string PROXIMITY_CALIBRATION_EXTEND_AFTER = ""; 
+            string PROXIMITY_CALIBRATION_EXTEND_AFTER = "";
 
             try
             {
@@ -895,19 +904,120 @@ namespace F002520
 
                 DisplayMessage("Before Proximity Sensor Calibration, PROXIMITY_CALIBRATION_EXTEND=" + PROXIMITY_CALIBRATION_EXTEND_BEFORE);
 
+                #region Proximity Sensor Calibration
 
+                /* ********************************** Default Threshold *********************************
+                 * PREV near_threshold: "800.000000"
+                 * PREV far_threshold: "600.000000"
+                 * 
+                 * After Calibration, The Threshold Value Must Changed.
+                 * 
+                 ****************************************************************************************/
 
+                for (int i = 0; i < 3; i++)
+                {
+                    DisplayMessage(string.Format("LOOP_{0}: Do Proximity Sensor Calibration.", i.ToString()));
+                    DisplayMessage("Run CMD: " + strRunCmd);
 
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);    // 15s
+                    DisplayMessage("Result: \r\n" + strResult);
 
+                    if (strResult.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) != -1)    // Somewhere appear fail
+                    {
+                        strErrorMessage = "Fail to do Proximity Sensor Calibration !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    else if (strResult.IndexOf("calibration PASS", StringComparison.OrdinalIgnoreCase) != -1)   // calibration PASS, if Near/Far threshold also default value, still fail.
+                    {
+                        //string[] LineArray = strResult.Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                        string[] LineArray = strResult.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
 
+                        string line = "";
+                        int startIndex = 0;
+                        int endIndex = 0;
+                        for (int j = 0; j < LineArray.Length; j++)
+                        {
+                            line = LineArray[j].Trim();
+                            if (line.StartsWith("near_threshold:"))
+                            {
+                                startIndex = line.IndexOf("\"") + 1;
+                                endIndex = line.LastIndexOf("\"");
+                                NEAR_THRESHOLD = line.Substring(startIndex, endIndex - startIndex);
+                            }
 
+                            if (line.StartsWith("far_threshold:"))
+                            {
+                                startIndex = line.IndexOf("\"") + 1;
+                                endIndex = line.LastIndexOf("\"");
+                                FAR_THRESHOLD = line.Substring(startIndex, endIndex - startIndex);
+                            }
+                        }
+                        DisplayMessage("After Calibration, NEAR_THRESHOLD: " + NEAR_THRESHOLD);
+                        DisplayMessage("After Calibration, FAR_THRESHOLD: " + FAR_THRESHOLD);
 
+                        // 使用正则表达式匹配浮点数模式
+                        Regex regex = new Regex(@"^\d+(\.\d+)?$");
+                        if ((regex.IsMatch(NEAR_THRESHOLD) == false) || (regex.IsMatch(FAR_THRESHOLD) == false))
+                        {
+                            strErrorMessage = "Fail to Get Near/Far threshold value !!!";
+                            bFlag = false;
+                            clsUtil.Dly(3.0);
+                            continue;
+                        }
 
+                        if ((NEAR_THRESHOLD == DEFAULT_NEAR_THRESHOLD) || (FAR_THRESHOLD == DEFAULT_FAR_THRESHOLD))
+                        {
+                            strErrorMessage = "After Calibration, the Near/Far threshold value not change !!!";
+                            bFlag = false;
+                            clsUtil.Dly(3.0);
+                            continue;
+                        }
+                        else
+                        {
+                            bFlag = true;
+                            break;
+                        }
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
 
+                DisplayMessage("Run Cmd to do Proximity Sensor Calibration Successful.");
+
+                #endregion
+
+                #region Compare Before and After Value
+
+                //string cmd = "adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION_EXTEND";
+                bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
+                DisplayMessage("Run CMD: " + strValueCmd);
+                DisplayMessage("After Proximity Sensor Calibration, PROXIMITY_CALIBRATION_EXTEND=" + strResult);
+                PROXIMITY_CALIBRATION_EXTEND_AFTER = strResult.ToUpper();
+                m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_AFTER = strResult.ToUpper(); 
+
+                if (strResult.Contains("00000000"))  // Equal to default value
+                {
+                    strErrorMessage = "Proximity Sensor calibration fail, PROXIMITY_CALIBRATION_EXTEND still default value !!!";
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+                if (PROXIMITY_CALIBRATION_EXTEND_AFTER == PROXIMITY_CALIBRATION_EXTEND_BEFORE)
+                {
+                    strErrorMessage = "Before and After calibration, GYRO_ZERO_OFFSET value not changed !!!";
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+         
+                #endregion 
             }
             catch (Exception ex)
             {
-                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                strErrorMessage = "TestPSensorCalibration Exception:" + ex.Message;
                 return false;
             }
 
@@ -918,16 +1028,98 @@ namespace F002520
         public override bool TestPSensorFunction()
         {
             string strErrorMessage = "";
+            string strTestItem = "";
+            bool bFlag = false;
+
+            string strNearPosition = "";
+            string strFarPosition = "";
+            string PSENSOR_GET_LOG = "";
 
             try
             {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
 
+                #region Parse XML
 
+                // Near-Position Value
+                strNearPosition = GetTestItemParameter(strTestItem, "NearPosition");
+                if (string.IsNullOrWhiteSpace(strNearPosition))
+                {
+                    strErrorMessage = "Fail to parse Near-Position parameter !";
+                    return false;
+                }
+                DisplayMessage("Param NearPosition: " + strNearPosition);
 
+                // Far-Position Value
+                strFarPosition = GetTestItemParameter(strTestItem, "FarPosition");
+                if (string.IsNullOrWhiteSpace(strFarPosition))
+                {
+                    strErrorMessage = "Fail to parse Far-Position parameter !";
+                    return false;
+                }
+                DisplayMessage("Param FarPosition: " + strFarPosition);
+
+                // PSensor Get Log Cmd
+                PSENSOR_GET_LOG = GetTestItemParameter(strTestItem, "GetPSensorLog");
+                if (string.IsNullOrWhiteSpace(PSENSOR_GET_LOG))
+                {
+                    strErrorMessage = "Fail to parse GetPSensorLog parameter !";
+                    return false;
+                }
+                DisplayMessage("Param GetPSensorLog: " + PSENSOR_GET_LOG);
+
+                #endregion
+
+                #region Trun On Display
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (ScreenOnAction(ref strErrorMessage) == false)
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(2.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    strErrorMessage = "Fail to control screen on, " + strErrorMessage;
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                #endregion
+
+                #region Check PSensor Near-Position Function
+
+                if (CheckNearPositionFunction(strNearPosition, PSENSOR_GET_LOG, ref strErrorMessage) == false)
+                {
+                    strErrorMessage = "Fail to Check PSensor Near Function, " + strErrorMessage;
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                #endregion
+
+                #region Check PSensor Far-Position Function
+
+                if (CheckFarPositionFunction(strFarPosition, PSENSOR_GET_LOG, ref strErrorMessage) == false)
+                {
+                    strErrorMessage = "Fail to Check PSensor Far Function, " + strErrorMessage;
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                #endregion
             }
             catch (Exception ex)
             {
-                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                strErrorMessage = "TestPSensorFunction Exception:" + ex.Message;
                 return false;
             }
 
@@ -938,16 +1130,148 @@ namespace F002520
         public override bool TestAudioCalibration()
         {
             string strErrorMessage = "";
+            string strTestItem = "";
+            bool bRes = false;
+            bool bFlag = false;
+            string strCmd = "";
+            string strResult = "";
+
+            string AudioPANameCmd = "";
+            string CalibrationCmd = "";
+            string GetMDBCmd = "";
+
+            string MAX98390L_TROOM_BEFORE = m_stUnitDeviceInfo.MAX98390L_TROOM_BEFORE;
+            string MAX98390L_RDC_BEFORE = m_stUnitDeviceInfo.MAX98390L_RDC_BEFORE;
+            string MAX98390L_TROOM_AFTER = "";
+            string MAX98390L_RDC_AFTER = "";
+
 
             try
             {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
+
+                #region Parse XML
+
+                // Get Audio PA Name Cmd
+                AudioPANameCmd = GetTestItemParameter(strTestItem, "GetPAName");
+                if (string.IsNullOrWhiteSpace(AudioPANameCmd))
+                {
+                    strErrorMessage = "Fail to parse GetPAName parameter !";
+                    return false;
+                }
+                DisplayMessage("Param GetPAName: " + AudioPANameCmd);
+
+                // Audio Calibration Cmd
+                CalibrationCmd = GetTestItemParameter(strTestItem, "CalibrationCmd");
+                if (string.IsNullOrWhiteSpace(CalibrationCmd))
+                {
+                    strErrorMessage = "Fail to parse CalibrationCmd parameter !";
+                    return false;
+                }
+                DisplayMessage("Param CalibrationCmd: " + CalibrationCmd);
+
+                // Get MDB Cmd
+                GetMDBCmd = GetTestItemParameter(strTestItem, "GetMDBCmd");
+                if (string.IsNullOrWhiteSpace(GetMDBCmd))
+                {
+                    strErrorMessage = "Fail to parse GetMDBCmd parameter !";
+                    return false;
+                }
+                DisplayMessage("Param GetMDBCmd: " + GetMDBCmd);
+
+                #endregion
+
+                #region Get Audio PA Name
+
+                DisplayMessage("Get Audio PA Name.");
+                bRes = clsProcess.ExcuteCmd(AudioPANameCmd, 200, ref strResult);
+                DisplayMessage("Send Cmd: " + AudioPANameCmd);
+                DisplayMessage("Audio PA Name: " + strResult);
+
+                if (strResult.IndexOf("max98390xx", StringComparison.OrdinalIgnoreCase) == -1) // Not Max Audio Chip
+                {
+                    DisplayMessage("Not Max98390 Audio Chip, Skip to do Calibration ...");
+                    return true;
+                }
+
+                #endregion
+
+                #region MDB Value
+
+                DisplayMessage("Before Audio Calibration");
+                DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_BEFORE);
+                DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_BEFORE);
+
+                #endregion
+
+                #region Turn On Display
+
+                DisplayMessage("Turn On Display ...");
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (ScreenOnAction(ref strErrorMessage) == false)
+                    {
+                        strErrorMessage = "Fail to turn on display !";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage);
+                    return false;
+                }
+
+                DisplayMessage("Turn On Display Successful.");
+
+                #endregion
+
+                #region Adjust the Volume to Maximum
+
+                DisplayMessage("Adjust the volume to Maximum.");
+                strCmd = "adb shell input keyevent 24";
+                for (int i = 0; i <= 13; i++ )
+                {
+                    DisplayMessage("Loop_" + i.ToString() + ": Raise the volume");
+                    DisplayMessage("Send Cmd: " + strCmd);
+                    bRes = clsProcess.ExcuteCmd(strCmd, 200);
+                    clsUtil.Dly(0.2);
+                }
+
+                #endregion
+
+
+                #region Audio Calibration
+
+
+
+                #endregion
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
             }
             catch (Exception ex)
             {
-                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                strErrorMessage = "TestAudioCalibration Exception:" + ex.Message;
                 return false;
             }
 
@@ -967,7 +1291,7 @@ namespace F002520
             }
             catch (Exception ex)
             {
-                strErrorMessage = "TestAutoChangeOver Exception:" + ex.Message;
+                strErrorMessage = "TestBarometerSensorOffset Exception:" + ex.Message;
                 return false;
             }
 
@@ -1623,6 +1947,7 @@ namespace F002520
                 // Turn off
                 bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strResult);
                 DisplayMessage("Send Cmd: " + strCmd);
+                clsUtil.Dly(0.5);
 
                 // Check status
                 strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
@@ -1659,7 +1984,8 @@ namespace F002520
                 strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
 
                 bRes = clsProcess.ExcuteCmd(strCmd, 2000, ref strResult);
-                if (strResult.Contains("state=ON"))
+              
+                if (strResult.IndexOf("state=ON", StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     DisplayMessage("The Screen Already Turn ON !");
                     return true;
@@ -1672,14 +1998,15 @@ namespace F002520
                 // Turn on
                 bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strResult);
                 DisplayMessage("Send Cmd: " + strCmd);
+                clsUtil.Dly(0.5);
 
                 // Check status
                 strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
                 DisplayMessage("Check Screen Status, Send Cmd: " + strCmd);
                 bRes = clsProcess.ExcuteCmd(strCmd, 2000, ref strResult);
-
                 DisplayMessage("Response: " + strResult);
-                if (strResult.Contains("state=ON"))
+
+                if (strResult.IndexOf("state=ON", StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     return true;
                 }
@@ -1695,7 +2022,7 @@ namespace F002520
             }
         }
 
-        private bool SetDamBoardUp(double dDistance, double dHome, ref string strErrorMessage)
+        private bool MoveDamBoardUp(double dDistance, double dHome, ref string strErrorMessage)
         {
             strErrorMessage = "";
 
@@ -1715,6 +2042,36 @@ namespace F002520
             {
                 strErrorMessage = "Exception:" + ex.Message;
                 return false;
+            }
+
+            return true;
+        }
+
+        private bool MoveDamBoardDown(double dDistance, double dHome, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+
+            if (m_dCurrentDamBoardPosition == dDistance)
+            {
+                return true;
+            }
+
+            try
+            {
+                int iStep = 0;
+                iStep = (int)((dHome - dDistance) / 0.012 * 10);
+
+                if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
+                {
+                    return false;
+                }
+
+                m_dCurrentDamBoardPosition = dDistance;         
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;  
             }
 
             return true;
@@ -1911,11 +2268,249 @@ namespace F002520
             return true;
         }
 
+        private bool CheckNearPositionFunction(string strNearPosition, string PSENSOR_GET_LOG, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+            bool bFlag = false;
+            string strCmd = "";
+            string strResult = "";
 
+            string NEARSPEC = "0.000000";
 
+            try
+            {
+                DisplayMessage("Check PSensor Near-Position Function.");
 
+                #region  Get PROXIMITY_CALIBRATION Value
 
+                strCmd = "adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION";
+                bRes = clsProcess.ExcuteCmd(strCmd, 100, ref strResult);
+                DisplayMessage("Before Check PSensor Near Function, PROXIMITY_CALIBRATION=", strResult);
 
+                #endregion
+
+                #region Move Dame Board TO Near-Position
+
+                DisplayMessage("Move Dame Board to Near-Position, Make sure distance is: " + strNearPosition + "cm.");
+                double dDistance = Convert.ToDouble(strNearPosition);
+                double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
+
+                if (MoveDamBoardDown(dDistance, dHome, ref strErrorMessage) == false)
+                {
+                    strErrorMessage = "Fail move dame board to near position:" + strErrorMessage;
+                    return false;
+                }
+
+                #endregion
+
+                clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
+
+                #region Get PSensor Calibration LOG And Compare Spec
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (GetPSensorLog(PSENSOR_GET_LOG, ref strResult) == false)
+                    {
+                        strErrorMessage = "Fail to get PSensor calibration log.";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+
+                    if (CheckPSensorValueMatchSpec(strResult, NEARSPEC) == false)
+                    {
+                        strErrorMessage = "Test PSensor Near Function Failed.";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage);
+                    return false;
+                }
+
+                DisplayMessage("Check PSensor Near Position Function Success.");
+                #endregion
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;     
+        }
+
+        private bool CheckFarPositionFunction(string strFarPosition, string PSENSOR_GET_LOG, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+            bool bFlag = false;
+            string strCmd = "";
+            string strResult = "";
+
+            string FARSPEC = "5.000000";
+
+            try
+            {
+                DisplayMessage("Check PSensor Far-Position Function.");
+
+                #region  Get PROXIMITY_CALIBRATION Value
+
+                strCmd = "adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION";
+                bRes = clsProcess.ExcuteCmd(strCmd, 100, ref strResult);
+                DisplayMessage("Before Check PSensor Far Function, PROXIMITY_CALIBRATION=", strResult);
+
+                #endregion
+
+                #region Move Dame Board TO Far-Position
+
+                DisplayMessage("Move Dame Board to Far-Position, Make sure distance is: " + strFarPosition + "cm.");
+                double dDistance = Convert.ToDouble(strFarPosition);
+                double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
+
+                if (MoveDamBoardUp(dDistance, dHome, ref strErrorMessage) == false)
+                {
+                    strErrorMessage = "Fail move dam board to Far position:" + strErrorMessage;
+                    return false;
+                }
+
+                #endregion
+
+                clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
+
+                #region Get PSensor Calibration LOG And Compare Spec
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (GetPSensorLog(PSENSOR_GET_LOG, ref strResult) == false)
+                    {
+                        strErrorMessage = "Fail to get PSensor calibration log.";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+
+                    if (CheckPSensorValueMatchSpec(strResult, FARSPEC) == false)
+                    {
+                        strErrorMessage = "Test PSensor Far Function Failed.";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage);
+                    return false;
+                }
+
+                DisplayMessage("Check PSensor Far Position Function Success.");
+                #endregion
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool GetPSensorLog(string strCmd, ref string strResult)
+        {
+            strResult = "";
+            bool bRes = false;
+
+            DisplayMessage("Get PSensor Calibration Log.");
+            DisplayMessage("Send Cmd: " + strCmd);
+
+            bRes = clsProcess.ExcuteCmd(strCmd, 3000, ref strResult);
+
+            Logger.Info("Result: " + strResult);
+            if (string.IsNullOrWhiteSpace(strResult))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool CheckPSensorValueMatchSpec(string strResult, string strSpec)
+        {
+            string strErrorMessage = "";
+            bool bFlag =false;
+
+            try
+            {
+                List<string> ValueList = new List<string>();
+                string[] LineArray = strResult.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries);
+
+                foreach(string line in LineArray)
+                {
+                    string temp = line.Trim();
+                    string[] TempArray = temp.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    for (int i = 0; i < TempArray.Length; i++)
+                    {
+                        if (i == 3)
+                        {
+                            ValueList.Add(TempArray[i]);
+                        }
+                    }
+                }
+
+                if (ValueList.Count != 0)
+                {
+                    for (int j = 0; j < ValueList.Count; j++ )
+                    {
+                        ValueList[j] = ValueList[j].Trim();
+                        if (ValueList[j].CompareTo(strSpec) != 0)
+                        {
+                            strErrorMessage = string.Format("PSensor Log Value = {0}, Spec = {1}, Not Matched !!!", ValueList[j], strSpec);
+                            bFlag = false;
+                            continue;  
+                        }
+                        else
+                        {
+                            DisplayMessage(string.Format("PSensor Log Value = {0}, is Matched with Spec !!!", ValueList[j]));
+                            bFlag = true;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    strErrorMessage = "Get PSensor Log Value is Empty !!!";
+                    bFlag = false;          
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage);
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception: " + ex.Message;
+                return false;
+            }
+
+            return true;  
+        }
 
 
 

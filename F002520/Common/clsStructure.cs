@@ -7,16 +7,7 @@ using System.Threading.Tasks;
 
 namespace F002520
 {
-    public enum ModelID : int
-    {
-        NULL = 0,
-        CT40,
-        CT40P,
-        CT45,
-        CT45P,
-        CT47,
-        CW45   
-    }
+
 
     public struct MFGData
     {
