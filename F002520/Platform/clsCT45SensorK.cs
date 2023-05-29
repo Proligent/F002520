@@ -25,14 +25,13 @@ namespace F002520
         private const string GSensorName = "android.sensor.accelerometer";
         private const string BarometerName = "android.sensor.pressure";
 
-      
         //clsMDCS m_objMDCS = new clsMDCS();
         private clsExecProcess clsProcess = new clsExecProcess();
         private UnitDeviceInfo m_stUnitDeviceInfo = new UnitDeviceInfo();
 
         #endregion
 
-      
+
         #region TestItem
 
         public override bool TestInit()
@@ -44,7 +43,8 @@ namespace F002520
             {
                 strTestItem = MethodBase.GetCurrentMethod().Name;
 
-                InitUnitDeviceInfo();    
+                InitUnitDeviceInfo(); 
+   
             }
             catch(Exception ex)
             {
@@ -64,8 +64,7 @@ namespace F002520
             double dValue_AI1 = 0.0;
 
             try
-            {
-                // Pluge USB Pogopin and Check Cylinder Position
+            {         
                 #region Pluge USB Pogopin
 
                 NISetDigital(0, 0, 1);  // DO0_0 H
@@ -74,7 +73,7 @@ namespace F002520
 
                 #endregion
 
-                #region Check Position
+                #region Check Cylinder Position
 
                 for (int i = 0; i < 5; i++)
                 {             
@@ -98,7 +97,7 @@ namespace F002520
                     return false;
                 }
 
-                #endregion
+                #endregion       
             }
             catch (Exception ex)
             {
@@ -347,7 +346,7 @@ namespace F002520
 
                 #endregion
 
-                DisplayMessage("Test Check Pre Station MDCS Result Sucessfully.");
+                DisplayMessage("Test Check Pre Station MDCS Result Sucessful.");
             }
             catch(Exception ex)
             {
@@ -1145,7 +1144,6 @@ namespace F002520
             string MAX98390L_TROOM_AFTER = "";
             string MAX98390L_RDC_AFTER = "";
 
-
             try
             {
                 strTestItem = MethodBase.GetCurrentMethod().Name;
@@ -1187,18 +1185,19 @@ namespace F002520
                 bRes = clsProcess.ExcuteCmd(AudioPANameCmd, 200, ref strResult);
                 DisplayMessage("Send Cmd: " + AudioPANameCmd);
                 DisplayMessage("Audio PA Name: " + strResult);
+                m_stUnitDeviceInfo.AudioPAName = strResult;
 
                 if (strResult.IndexOf("max98390xx", StringComparison.OrdinalIgnoreCase) == -1) // Not Max Audio Chip
                 {
-                    DisplayMessage("Not Max98390 Audio Chip, Skip to do Calibration ...");
+                    DisplayMessage("Not max98390xx Audio Chip, Skip to do Audio Calibration ...");
                     return true;
                 }
 
                 #endregion
 
-                #region MDB Value
+                #region Get MDB Value
 
-                DisplayMessage("Before Audio Calibration");
+                DisplayMessage("Before Audio Calibration.");
                 DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_BEFORE);
                 DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_BEFORE);
 
@@ -1237,6 +1236,7 @@ namespace F002520
 
                 DisplayMessage("Adjust the volume to Maximum.");
                 strCmd = "adb shell input keyevent 24";
+
                 for (int i = 0; i <= 13; i++ )
                 {
                     DisplayMessage("Loop_" + i.ToString() + ": Raise the volume");
@@ -1247,27 +1247,54 @@ namespace F002520
 
                 #endregion
 
-
                 #region Audio Calibration
 
+                DisplayMessage("Start to do Audio Calibration.");
+                bRes = clsProcess.ExcuteCmd(CalibrationCmd, 2000, ref strResult);
 
+                DisplayMessage("Send Cmd: " + CalibrationCmd);
+                DisplayMessage("Response: " + strResult);
 
                 #endregion
 
+                #region Get MDB Value
 
+                DisplayMessage("After Audio Calibration.");
 
+                // MAX98390L_TROOM
+                strCmd = "adb shell mfg-tool -g MAX98390L_TROOM";
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+                if (string.IsNullOrWhiteSpace(strResult))
+                {
+                    strErrorMessage = "Fail to get MAX98390L_TROOM value.";
+                    return false;    
+                }
+                MAX98390L_TROOM_AFTER = strResult.ToUpper();
+                m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = strResult.ToUpper();
+                DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_AFTER);
 
+                // MAX98390L_RDC
+                bRes = clsProcess.ExcuteCmd(GetMDBCmd, 200, ref strResult);
+                if (string.IsNullOrWhiteSpace(strResult))
+                {
+                    strErrorMessage = "Fail to get MAX98390L_RDC value.";
+                    return false;
+                }
+                MAX98390L_RDC_AFTER = strResult.ToUpper();
+                m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = strResult.ToUpper();
+                DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_AFTER);
 
+                #endregion
 
+                #region RDC Value Must Be Changed
 
+                if (MAX98390L_RDC_AFTER == MAX98390L_RDC_BEFORE)
+                {
+                    DisplayMessage("MAX98390L_RDC value is not changed before and after calibration !!!");
+                    return false;
+                }
 
-
-
-
-
-
-
-
+                #endregion
             }
             catch (Exception ex)
             {
@@ -1282,12 +1309,81 @@ namespace F002520
         public override bool TestBarometerSensorOffset()
         {
             string strErrorMessage = "";
+            string strTestItem = "";
+            bool bRes = false;
+            string strCmd = "";
+            string strResult = "";
+
+            string OFFSETVALUE = "";
 
             try
             {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
 
+                #region Parse XML
 
+                // Offset Value
+                OFFSETVALUE = GetTestItemParameter(strTestItem, "OffsetValue");
+                if (string.IsNullOrWhiteSpace(OFFSETVALUE))
+                {
+                    strErrorMessage = "Fail to parse OFFSETVALUE parameter !";
+                    return false;
+                }
+                DisplayMessage("Param OFFSETVALUE: " + OFFSETVALUE);
 
+                #endregion
+
+                #region Check
+
+                if (m_bIsWWAN == false) // WLAN
+                {
+                    DisplayMessage("This is WLAN Model, Skip to do Offset !!!");
+                    return false;
+                }
+
+                if(m_bIsTDKBaroSensor == false) // TDK?
+                {
+                    DisplayMessage("This is not TDK Barometric Sensor, Skip to do Offset !!!");
+                    return false;
+                }
+
+                #endregion
+
+                #region Write Offset Value
+
+                DisplayMessage("Write Offset Value.");
+                strCmd = string.Format("adb shell su 0  sensorK -sensor=pressure -calibration=1 -presscal={0}", OFFSETVALUE);
+                DisplayMessage("Send Cmd:" + strCmd);
+                bRes = clsProcess.ExcuteCmd(strCmd, 200);      
+ 
+                #endregion
+
+                #region Enable Immediately
+
+                DisplayMessage("Enable Immediately.");
+                strCmd = "adb shell ssc_drva_test -sensor=pressure -sample_rate=-1 -duration=5 -factory_test=2";
+                DisplayMessage("Send Cmd:" + strCmd);
+                bRes = clsProcess.ExcuteCmd(strCmd, 200);    
+
+                #endregion
+
+                #region CHECK OFFSET VALUE
+
+                DisplayMessage("Check Offset Value.");
+                strCmd = "adb shell su 0 cat /mnt/vendor/persist/sensors/registry/registry/icp201xx_0_platform.pressure.fac_cal.bias";
+                DisplayMessage("Send Cmd:" + strCmd);
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+
+                if (strResult.Contains(OFFSETVALUE) == false)
+                {
+                    strErrorMessage = "Failed to check offset value !!!";
+                    return false;
+                }
+                DisplayMessage("Write Offset Value Success.");
+
+                m_stUnitDeviceInfo.OFFSET_VALUE = OFFSETVALUE;
+
+                #endregion   
             }
             catch (Exception ex)
             {
@@ -1302,12 +1398,57 @@ namespace F002520
         public override bool TestReboot()
         {
             string strErrorMessage = "";
+            string strTestItem = "";
+            bool bRes = false;
+         
+            string REBOOT_MODE = "";
+            string APK_CMD = "";
 
             try
             {
+                strTestItem = MethodBase.GetCurrentMethod().Name;
 
+                #region Parse XML
 
+                // Mode
+                REBOOT_MODE = GetTestItemParameter(strTestItem, "Mode").ToUpper();
+                if (string.IsNullOrWhiteSpace(REBOOT_MODE))
+                {
+                    strErrorMessage = "Fail to parse MODE parameter !";
+                    return false;
+                }
+                DisplayMessage("Param Mode: " + REBOOT_MODE);
 
+                // APK CMD
+                APK_CMD = GetTestItemParameter(strTestItem, "ApkCmd");
+                if (string.IsNullOrWhiteSpace(APK_CMD))
+                {
+                    strErrorMessage = "Fail to parse ApkCmd parameter !";
+                    return false;
+                }
+                DisplayMessage("Param ApkCmd: " + APK_CMD);
+
+                #endregion
+
+                #region REBOOT
+
+                if (REBOOT_MODE == "REBOOT")    // adb reboot
+                {
+                    DisplayMessage("Use adb reboot to shut down device ...");
+                    bRes = AdbRebootDevice();
+                }
+                else if (REBOOT_MODE == "APK")  // apk reboot
+                {
+                    DisplayMessage("Use Apk cmd to shut down device ...");
+                    bRes = ApkRebootDevice(APK_CMD);
+                }
+                else
+                {
+                    DisplayMessage("Undefined Reboot Mode !!!");
+                    return false;
+                }
+
+                #endregion
             }
             catch (Exception ex)
             {
@@ -1324,10 +1465,11 @@ namespace F002520
             string strErrorMessage = "";
 
             try
-            {
-
-
-
+            {               
+                // Eject USB Pogopin
+                DisplayMessage("Eject USB Pogopin");
+                NISetDigital(0, 0, 0);  // DO0_0 L
+                NISetDigital(0, 1, 1);  // DO0_1 H
             }
             catch (Exception ex)
             {
@@ -1954,8 +2096,8 @@ namespace F002520
                 DisplayMessage("Check Screen Status, Send Cmd: " + strCmd);
                 bRes = clsProcess.ExcuteCmd(strCmd, 2000, ref strResult);
 
-                DisplayMessage("Response: " + strResult);
-                if (strResult.Contains("state=OFF"))
+                DisplayMessage("Response: " + strResult);       
+                if (strResult.IndexOf("state=OFF", StringComparison.OrdinalIgnoreCase) != -1)
                 {
                     return true;
                 }
@@ -1996,9 +2138,9 @@ namespace F002520
                 strCmd = "adb shell input keyevent 26";
                
                 // Turn on
-                bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strResult);
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
                 DisplayMessage("Send Cmd: " + strCmd);
-                clsUtil.Dly(0.5);
+                clsUtil.Dly(1.0);
 
                 // Check status
                 strCmd = "adb shell dumpsys power | find \"Display Power: state=\"";
@@ -2438,7 +2580,7 @@ namespace F002520
             DisplayMessage("Get PSensor Calibration Log.");
             DisplayMessage("Send Cmd: " + strCmd);
 
-            bRes = clsProcess.ExcuteCmd(strCmd, 3000, ref strResult);
+            bRes = clsProcess.ExcuteCmd(strCmd, 6000, ref strResult);   // 6s
 
             Logger.Info("Result: " + strResult);
             if (string.IsNullOrWhiteSpace(strResult))
@@ -2512,9 +2654,61 @@ namespace F002520
             return true;  
         }
 
+        private bool AdbRebootDevice()
+        {
+            string strCmd = "";
+            bool bRes = false;
 
+            try
+            {
+                strCmd = "adb root";
+                bRes = clsProcess.ExcuteCmd(strCmd, 200);
 
+                strCmd = "adb wait-for-device";
+                bRes = clsProcess.ExcuteCmd(strCmd, 200);
 
+                strCmd = "adb shell reboot -p";
+                bRes = clsProcess.ExcuteCmd(strCmd, 200);
+            }
+            catch
+            {
+                return false;
+            }
+            
+            return true;
+        }
+
+        private bool ApkRebootDevice(string strCmd)
+        {
+            bool bRes = false;
+            string Cmd = "";
+            string strResult = "";
+
+            try
+            {
+                Cmd = "adb root";
+                bRes = clsProcess.ExcuteCmd(Cmd, 200);
+
+                Cmd = "adb wait-for-device";
+                bRes = clsProcess.ExcuteCmd(Cmd, 200);
+
+                // APK CMD
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+                DisplayMessage("Send Cmd: " + strCmd);
+                DisplayMessage("Response: " + strResult);
+                if (strResult.IndexOf("Starting: Intent", StringComparison.OrdinalIgnoreCase) == -1)
+                {
+                    DisplayMessage("Execute apk cmd to reboot fail !!!");
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
 
         #endregion
     }

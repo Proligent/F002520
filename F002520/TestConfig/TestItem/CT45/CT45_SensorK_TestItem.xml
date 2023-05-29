@@ -38,7 +38,6 @@
       <ReConnectTimes>3</ReConnectTimes>
     </TestCheckDeviceReady>
     
-
     <TestReadMFGData>
     </TestReadMFGData>
 
@@ -100,9 +99,13 @@
     </TestAudioCalibration>
 
     <TestBarometerSensorOffset>
+      <OffsetValue>0.565656</OffsetValue>
     </TestBarometerSensorOffset>
 
     <TestReboot>
+      <!--Reboot | APK-->
+      <Mode>Reboot</Mode>
+      <ApkCmd>adb shell am start -n com.honeywell.testing/.BITActivity</ApkCmd>
     </TestReboot>
 
     <TestEnd>

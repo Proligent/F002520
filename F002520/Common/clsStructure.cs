@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 
 namespace F002520
 {
-
-
     public struct MFGData
     {
         public string SN;
@@ -72,6 +70,9 @@ namespace F002520
         public string PROXIMITY_CALIBRATION_EXTEND_AFTER;
         public string MAX98390L_TROOM_AFTER;
         public string MAX98390L_RDC_AFTER;
+
+        // Barometer
+        public string OFFSET_VALUE;
 
         public string EID;
         public string WorkOrder;
