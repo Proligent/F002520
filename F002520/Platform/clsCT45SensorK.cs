@@ -25,7 +25,6 @@ namespace F002520
         private const string GSensorName = "android.sensor.accelerometer";
         private const string BarometerName = "android.sensor.pressure";
 
-        //clsMDCS m_objMDCS = new clsMDCS();
         private clsExecProcess clsProcess = new clsExecProcess();
         private UnitDeviceInfo m_stUnitDeviceInfo = new UnitDeviceInfo();
 
@@ -52,7 +51,6 @@ namespace F002520
                 return false;  
             }
 
-            DisplayMessage("Completed !!!");
             return true;
         }
 
@@ -105,7 +103,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true;
         }
 
@@ -128,6 +125,7 @@ namespace F002520
                 {
                     ReConnectTimes = 3;
                 }
+                Logger.Info("ReConnectTimes: " + ReConnectTimes.ToString());
 
                 #endregion
 
@@ -192,11 +190,14 @@ namespace F002520
                     return false;
                 }
 
-                string strDate = DateTime.Now.ToString("yyyy-MM-dd_hh-mm-ss");
+                // Change Log File Name
+                string strDate = DateTime.Now.ToString("yyyyMMdd_hhmmss");
                 string logFileName = string.Format("Debug_{0}_{1}.log", strSN, strDate);
                 string folder = Application.StartupPath + @"\log\" + DateTime.Now.ToString("yyyy-MM-dd") + "\\"; ;
                 logFileName = folder + logFileName;
                 Logger.ChangeLogFileName("RollingFile", logFileName);
+
+                Logger.Info("Start Unit Test.");
                 Logger.Info("SN:{0}", strSN);
 
                 #endregion
@@ -207,7 +208,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true;
         }
 
@@ -241,6 +241,30 @@ namespace F002520
                 }
 
                 #endregion
+
+                #region Get Android OS Version
+
+                for (int i = 0; i < 3; i++)
+                {
+                    if (ReadOSVersion(ref strErrorMessage) == false)
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    strErrorMessage = "Fail to Read Android OS Version: " + strErrorMessage;
+                    return false;
+                }
+
+                #endregion
             }
             catch(Exception ex)
             {
@@ -249,7 +273,26 @@ namespace F002520
             
             }
 
-            DisplayMessage("Completed !!!");
+            return true;
+        }
+
+        public override bool TestCheckRFResult()
+        {
+            string strErrorMessage = "";
+            //bool bFlag = false;
+
+            try
+            { 
+            
+
+
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "TestCheckRFResult Exception: " + ex.Message;
+                return false;
+            }
+
             return true;
         }
 
@@ -262,8 +305,7 @@ namespace F002520
             string strURL = "";
             string PreStationDeviceName = "";
             string PreStationVarName = "";
-            string PreStationVarTargetResult = "";
-           
+            string PreStationVarTargetResult = "";     
             string strSN = m_stUnitDeviceInfo.SN;
 
             try
@@ -273,14 +315,56 @@ namespace F002520
 
                 #region Parse XML
 
+                // PreStationDeviceName
                 PreStationDeviceName = GetTestItemParameter(strTestItem, "PreStationDeviceName");
                 if (string.IsNullOrWhiteSpace(PreStationDeviceName))
                 {
                     strErrorMessage = "Fail to get PreStationDeviceName value !";
                     return false;
                 }
-                DisplayMessage("Device Name: " + PreStationDeviceName);
 
+                string[] DeviceNameList = PreStationDeviceName.Split(new char[] {'|'}, StringSplitOptions.RemoveEmptyEntries);
+                if (DeviceNameList.Length > 1)
+                {
+                    PreStationDeviceName = "";
+                    for (int i = 0; i < DeviceNameList.Length; i++)
+                    {
+                        string deviceName = DeviceNameList[i].Trim();
+                        Match match = Regex.Match(deviceName, @"(CT45P|CT45)");
+                        if (match.Success)
+                        {
+                            string ModelValue = match.Value;
+                            if (ModelValue != m_stUnitDeviceInfo.Model)
+                            {
+                                strErrorMessage = string.Format("DeviceName: {0}, Not Match Device Model !!!", deviceName);
+                                //DisplayMessage(strErrorMessage, "ERROR");
+                                bFlag = false;
+                                continue;
+                            }
+                            else
+                            {
+                                PreStationDeviceName = deviceName.Trim();
+                                bFlag = true; 
+                                break;                   
+                            }
+                        }
+                        else
+                        {
+                            strErrorMessage = string.Format("DeviceName: {0}, Not Contain Device Model !!!", deviceName);       
+                            bFlag = false;
+                            break;
+                        }
+                    }     
+                    if (bFlag == false)
+                    {
+                        DisplayMessage(strErrorMessage, "ERROR");
+                        return false;
+                    }
+                }
+
+                DisplayMessage("PreStation Device Name: " + PreStationDeviceName);
+
+                // VarName
                 PreStationVarName = GetTestItemParameter(strTestItem, "VarName");
                 if (string.IsNullOrWhiteSpace(PreStationVarName))
                 {
@@ -288,6 +372,7 @@ namespace F002520
                     return false;
                 }
 
+                // VarTargetResult
                 PreStationVarTargetResult = GetTestItemParameter(strTestItem, "VarTargetResult");
                 if (string.IsNullOrWhiteSpace(PreStationVarTargetResult))
                 {
@@ -295,7 +380,8 @@ namespace F002520
                     return false;
                 }
 
-                strURL = GetTestItemParameter(strTestItem, "URL");
+                // URL
+                strURL = GetTestConfig("MDCS", "URL");
                 if (string.IsNullOrWhiteSpace(strURL))
                 {
                     strErrorMessage = "Fail to get MDCS URL value !";
@@ -354,7 +440,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true;   
         }
 
@@ -363,11 +448,13 @@ namespace F002520
             string strErrorMessage = "";
             bool bRes = false;
             bool bFlag = false;
+            //bool MES_Enable = false;
             string strCmd = "";
             string strEID = "";
             string strWorkOrder = "";
-            string strTestItem = ""; 
-            string MES_Enable = Program.g_mainForm.m_stOptionData.MES_Enable;
+            string strTestItem = "";        
+            string OptionMES_Enable = Program.g_mainForm.m_stOptionData.MES_Enable;   
+            string XmlMES_Enable = "";
             string MESStationName = ""; 
             string ScanSheetStationName = "";
             string SWVersionControl = "";
@@ -378,7 +465,18 @@ namespace F002520
 
                 #region Parse XML
 
-                MESStationName = GetTestItemParameter(strTestItem, "MESStation");
+                XmlMES_Enable = GetTestConfig("MES", "Enable").ToUpper();
+                if (string.IsNullOrWhiteSpace(XmlMES_Enable))
+                {
+                    strErrorMessage = "Fail to get MES Enable value !";
+                    return false;
+                }
+                if (XmlMES_Enable == "TRUE" && OptionMES_Enable == "1")
+                {
+                    frmMain.m_bMESEnable = true;
+                }
+
+                MESStationName = GetTestConfig("MES", "Station");
                 if (string.IsNullOrWhiteSpace(MESStationName))
                 {
                     strErrorMessage = "Fail to get MESStationName value !";
@@ -403,14 +501,14 @@ namespace F002520
 
                 #region Get Workorder Property
 
-                if (MES_Enable == "1")
+                if (frmMain.m_bMESEnable == true)
                 {
                     DisplayMessage("Get WorkOrder Property.");
                     strCmd = "adb shell getprop persist.sys.WorkOrder";
 
                     for (int i = 0; i < 3; i++)
                     {
-                        bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strWorkOrder);     
+                        bRes = clsProcess.ExcuteCmd(strCmd, 500, ref strWorkOrder);     
                         if (bRes && !string.IsNullOrWhiteSpace(strWorkOrder))
                         {
                             bFlag = true;
@@ -429,6 +527,7 @@ namespace F002520
                         return false;
                     }
                     m_stUnitDeviceInfo.WorkOrder = strWorkOrder;
+                    frmMain.m_stTestSaveData.TestRecord.WorkOrder = strWorkOrder;
                     DisplayMessage("WorkOrder: " + strWorkOrder);    
                 }
                 else
@@ -440,14 +539,14 @@ namespace F002520
 
                 #region Get EID Property
 
-                if (MES_Enable == "1")
+                if (frmMain.m_bMESEnable == true)
                 {
                     DisplayMessage("Get EID Property.");
                     strCmd = "adb shell getprop persist.sys.FLASH";
 
                     for (int i = 0; i < 3; i++)
                     {
-                        bRes = clsProcess.ExcuteCmd(strCmd, 1000, ref strEID);  
+                        bRes = clsProcess.ExcuteCmd(strCmd, 500, ref strEID);  
                         if (bRes && !string.IsNullOrWhiteSpace(strEID))
                         {
                             bFlag = true;
@@ -466,6 +565,7 @@ namespace F002520
                         return false;
                     }
                     m_stUnitDeviceInfo.EID = strEID;
+                    frmMain.m_stTestSaveData.TestRecord.EID = strEID;
                     DisplayMessage("EID: " + strEID);     
                 }
                 else
@@ -477,7 +577,7 @@ namespace F002520
 
                 #region Check MES Data
 
-                if (MES_Enable == "1")
+                if (frmMain.m_bMESEnable == true)
                 {
                     DisplayMessage("Check MES Data");
                     if (clsUploadMES.MESCheckData(strEID, MESStationName, strWorkOrder, ref strErrorMessage) == false)
@@ -524,7 +624,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -566,7 +665,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -582,14 +680,15 @@ namespace F002520
                 strTestItem = MethodBase.GetCurrentMethod().Name;
 
                 #region Parse XML
-  
-                dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
-                dPosition = Convert.ToDouble(GetTestItemParameter(strTestItem, "Position"));
+
+                dHome = Convert.ToDouble(clsConfigHelper.servoMotor.Home);
+                dPosition = Convert.ToDouble(GetTestItemParameter(strTestItem, "Position"));  
                 DisplayMessage("Home: " + dHome.ToString());
                 DisplayMessage("Position: " + dPosition.ToString());
 
                 #endregion
 
+                // Move to 5cm Distance to Screen
                 m_dCurrentDamBoardPosition = 0.0;
                 if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
                 {
@@ -602,7 +701,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -642,7 +740,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -656,7 +753,9 @@ namespace F002520
             string strValueCmd = "";
             string strResult = "";
             string ACCEL_ZERO_OFFSET_BEFORE = m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_BEFORE;
-            string ACCEL_ZERO_OFFSET_AFTER = ""; 
+            string ACCEL_ZERO_OFFSET_AFTER = "";
+
+            frmMain.m_stTestSaveData.TestRecord.TestGSensorCalibration = "Fail";
 
             try
             {
@@ -665,22 +764,22 @@ namespace F002520
                 #region Parse XML 
 
                 // Calibration CMD
-                strRunCmd = GetTestItemParameter(strTestItem, "Cmd1");
+                strRunCmd = GetTestItemParameter(strTestItem, "CalibrationCmd");
                 if (string.IsNullOrWhiteSpace(strRunCmd))
                 {
-                    strErrorMessage = "Fail to parse Cmd1 parameter !";
+                    strErrorMessage = "Fail to parse CalibrationCmd parameter !";
                     return false;
                 }
-                DisplayMessage("Param CMD1: " + strRunCmd);
+                DisplayMessage("Param CalibrationCmd: " + strRunCmd);
 
                 // Get Offset CMD
-                strValueCmd = GetTestItemParameter(strTestItem, "Cmd2");
+                strValueCmd = GetTestItemParameter(strTestItem, "GetMDBCmd");
                 if (string.IsNullOrWhiteSpace(strValueCmd))
                 {
-                    strErrorMessage = "Fail to parse Cmd2 parameter !";
+                    strErrorMessage = "Fail to parse GetMDBCmd parameter !";
                     return false;
                 }
-                DisplayMessage("Param CMD2: " + strValueCmd);
+                DisplayMessage("Param GetMDBCmd: " + strValueCmd);
 
                 #endregion
 
@@ -708,9 +807,10 @@ namespace F002520
                     //string cmd = "adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET";
                     bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
                     DisplayMessage("Run CMD: " + strValueCmd);
-                    DisplayMessage("After GSensor Calibration, ACCEL_ZERO_OFFSET=" + strResult);
-                    ACCEL_ZERO_OFFSET_AFTER = strResult;
+                    DisplayMessage("After GSensor Calibration, ACCEL_ZERO_OFFSET=" + strResult.ToUpper());
+                    ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
                     m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
+                    frmMain.m_stTestSaveData.TestRecord.ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
 
                     if (strResult.Contains("000000000000000000000000"))  // Equal to default value
                     {
@@ -740,7 +840,16 @@ namespace F002520
                     return false;
                 }
 
+                // ACCELEROMETER_CALIBRATION_AFTER
+                string strCmd = "adb shell su 0 mfg-tool -g ACCELEROMETER_CALIBRATION";
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+                DisplayMessage("Run CMD: " + strCmd);
+                DisplayMessage("After GSensor Calibration, ACCELEROMETER_CALIBRATION=" + strResult.ToUpper());
+                frmMain.m_stTestSaveData.TestRecord.ACCELEROMETER_CALIBRATION_AFTER = strResult.ToUpper();
+  
                 #endregion
+
+                frmMain.m_stTestSaveData.TestRecord.TestGSensorCalibration = "Pass";
             }
             catch (Exception ex)
             {
@@ -748,7 +857,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -762,7 +870,9 @@ namespace F002520
             string strValueCmd = "";
             string strResult = "";
             string GYRO_ZERO_OFFSET_BEFORE = m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_BEFORE;
-            string GYRO_ZERO_OFFSET_AFTER = ""; 
+            string GYRO_ZERO_OFFSET_AFTER = "";
+
+            frmMain.m_stTestSaveData.TestRecord.TestGYROSensorCalibration = "Fail";
 
             try
             {
@@ -771,22 +881,22 @@ namespace F002520
                 #region Parse XML
 
                 // Calibration CMD
-                strRunCmd = GetTestItemParameter(strTestItem, "Cmd1");
+                strRunCmd = GetTestItemParameter(strTestItem, "CalibrationCmd");
                 if (string.IsNullOrWhiteSpace(strRunCmd))
                 {
-                    strErrorMessage = "Fail to parse Cmd1 parameter !";
+                    strErrorMessage = "Fail to parse CalibrationCmd parameter !";
                     return false;
                 }
-                DisplayMessage("Param CMD1: " + strRunCmd);
+                DisplayMessage("Param CalibrationCmd: " + strRunCmd);
 
                 // Get Offset CMD
-                strValueCmd = GetTestItemParameter(strTestItem, "Cmd2");
+                strValueCmd = GetTestItemParameter(strTestItem, "GetMDBCmd");
                 if (string.IsNullOrWhiteSpace(strValueCmd))
                 {
-                    strErrorMessage = "Fail to parse Cmd2 parameter !";
+                    strErrorMessage = "Fail to parse GetMDBCmd parameter !";
                     return false;
                 }
-                DisplayMessage("Param CMD2: " + strValueCmd);
+                DisplayMessage("Param GetMDBCmd: " + strValueCmd);
 
                 #endregion
 
@@ -815,8 +925,9 @@ namespace F002520
                     bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
                     DisplayMessage("Run CMD: " + strValueCmd);
                     DisplayMessage("After GYRO Sensor Calibration, GYRO_ZERO_OFFSET=" + strResult);
-                    GYRO_ZERO_OFFSET_AFTER = strResult;
-                    m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_AFTER = strResult.ToUpper();
+                    GYRO_ZERO_OFFSET_AFTER = strResult.ToUpper();
+                    m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_AFTER = GYRO_ZERO_OFFSET_AFTER;
+                    frmMain.m_stTestSaveData.TestRecord.GYRO_ZERO_OFFSET_AFTER = GYRO_ZERO_OFFSET_AFTER;
 
                     if (strResult.Contains("000000000000000000000000"))  // Equal to default value
                     {
@@ -846,7 +957,16 @@ namespace F002520
                     return false;
                 }
 
+                // GYROSCOPE_CALIBRATION_AFTER
+                string strCmd = "adb shell su 0 mfg-tool -g GYROSCOPE_CALIBRATION";
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+                DisplayMessage("Run CMD: " + strCmd);
+                DisplayMessage("After GYRO Sensor Calibration, GYROSCOPE_CALIBRATION=" + strResult.ToUpper());
+                frmMain.m_stTestSaveData.TestRecord.GYROSCOPE_CALIBRATION_AFTER = strResult.ToUpper();
+
                 #endregion
+
+                frmMain.m_stTestSaveData.TestRecord.TestGYROSensorCalibration = "Pass";
             }
             catch (Exception ex)
             {
@@ -854,7 +974,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -867,13 +986,14 @@ namespace F002520
             string strRunCmd = "";
             string strValueCmd = "";
             string strResult = "";
-
             string NEAR_THRESHOLD = "";
             string FAR_THRESHOLD = "";
             string DEFAULT_NEAR_THRESHOLD = "800.000000";
             string DEFAULT_FAR_THRESHOLD = "600.000000";
             string PROXIMITY_CALIBRATION_EXTEND_BEFORE = m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_BEFORE;
             string PROXIMITY_CALIBRATION_EXTEND_AFTER = "";
+
+            frmMain.m_stTestSaveData.TestRecord.TestPSensorCalibration = "Fail";
 
             try
             {
@@ -882,22 +1002,22 @@ namespace F002520
                 #region Parse XML
 
                 // Calibration CMD
-                strRunCmd = GetTestItemParameter(strTestItem, "Cmd1");
+                strRunCmd = GetTestItemParameter(strTestItem, "CalibrationCmd");
                 if (string.IsNullOrWhiteSpace(strRunCmd))
                 {
-                    strErrorMessage = "Fail to parse Cmd1 parameter !";
+                    strErrorMessage = "Fail to parse CalibrationCmd parameter !";
                     return false;
                 }
-                DisplayMessage("Param CMD1: " + strRunCmd);
+                DisplayMessage("Param CalibrationCmd: " + strRunCmd);
 
                 // Get Offset CMD
-                strValueCmd = GetTestItemParameter(strTestItem, "Cmd2");
+                strValueCmd = GetTestItemParameter(strTestItem, "GetMDBCmd");
                 if (string.IsNullOrWhiteSpace(strValueCmd))
                 {
-                    strErrorMessage = "Fail to parse Cmd2 parameter !";
+                    strErrorMessage = "Fail to parse GetMDBCmd parameter !";
                     return false;
                 }
-                DisplayMessage("Param CMD2: " + strValueCmd);
+                DisplayMessage("Param GetMDBCmd: " + strValueCmd);
 
                 #endregion
 
@@ -912,7 +1032,6 @@ namespace F002520
                  * After Calibration, The Threshold Value Must Changed.
                  * 
                  ****************************************************************************************/
-
                 for (int i = 0; i < 3; i++)
                 {
                     DisplayMessage(string.Format("LOOP_{0}: Do Proximity Sensor Calibration.", i.ToString()));
@@ -995,9 +1114,10 @@ namespace F002520
                 //string cmd = "adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION_EXTEND";
                 bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
                 DisplayMessage("Run CMD: " + strValueCmd);
-                DisplayMessage("After Proximity Sensor Calibration, PROXIMITY_CALIBRATION_EXTEND=" + strResult);
+                DisplayMessage("After Proximity Sensor Calibration, PROXIMITY_CALIBRATION_EXTEND=" + strResult.ToUpper());
                 PROXIMITY_CALIBRATION_EXTEND_AFTER = strResult.ToUpper();
-                m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_AFTER = strResult.ToUpper(); 
+                m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_AFTER = PROXIMITY_CALIBRATION_EXTEND_AFTER;
+                frmMain.m_stTestSaveData.TestRecord.PROXIMITY_CALIBRATION_EXTEND_AFTER = PROXIMITY_CALIBRATION_EXTEND_AFTER;
 
                 if (strResult.Contains("00000000"))  // Equal to default value
                 {
@@ -1013,6 +1133,18 @@ namespace F002520
                 }
          
                 #endregion 
+
+                #region PROXIMITY_CALIBRATION_AFTER
+
+                string strCmd = "adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION";
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+                DisplayMessage("Run CMD: " + strCmd);
+                DisplayMessage("After Proximity Sensor Calibration, PROXIMITY_CALIBRATION=" + strResult.ToUpper());
+                frmMain.m_stTestSaveData.TestRecord.PROXIMITY_CALIBRATION_AFTER = strResult.ToUpper();
+
+                #endregion
+
+                frmMain.m_stTestSaveData.TestRecord.TestPSensorCalibration = "Pass";
             }
             catch (Exception ex)
             {
@@ -1020,7 +1152,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -1029,10 +1160,11 @@ namespace F002520
             string strErrorMessage = "";
             string strTestItem = "";
             bool bFlag = false;
-
             string strNearPosition = "";
             string strFarPosition = "";
             string PSENSOR_GET_LOG = "";
+
+            frmMain.m_stTestSaveData.TestRecord.TestPSensorFunction = "Fail";
 
             try
             {
@@ -1115,6 +1247,8 @@ namespace F002520
                 }
 
                 #endregion
+
+                frmMain.m_stTestSaveData.TestRecord.TestPSensorFunction = "Pass";
             }
             catch (Exception ex)
             {
@@ -1122,7 +1256,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -1134,15 +1267,15 @@ namespace F002520
             bool bFlag = false;
             string strCmd = "";
             string strResult = "";
-
             string AudioPANameCmd = "";
             string CalibrationCmd = "";
             string GetMDBCmd = "";
-
             string MAX98390L_TROOM_BEFORE = m_stUnitDeviceInfo.MAX98390L_TROOM_BEFORE;
             string MAX98390L_RDC_BEFORE = m_stUnitDeviceInfo.MAX98390L_RDC_BEFORE;
             string MAX98390L_TROOM_AFTER = "";
             string MAX98390L_RDC_AFTER = "";
+
+            frmMain.m_stTestSaveData.TestRecord.TestAudioCalibration = "Fail";
 
             try
             {
@@ -1156,8 +1289,8 @@ namespace F002520
                 {
                     strErrorMessage = "Fail to parse GetPAName parameter !";
                     return false;
-                }
-                DisplayMessage("Param GetPAName: " + AudioPANameCmd);
+                }        
+                DisplayMessage("Param GetPANameCmd: " + AudioPANameCmd);
 
                 // Audio Calibration Cmd
                 CalibrationCmd = GetTestItemParameter(strTestItem, "CalibrationCmd");
@@ -1186,6 +1319,7 @@ namespace F002520
                 DisplayMessage("Send Cmd: " + AudioPANameCmd);
                 DisplayMessage("Audio PA Name: " + strResult);
                 m_stUnitDeviceInfo.AudioPAName = strResult;
+                frmMain.m_stTestSaveData.TestRecord.AudioPAName = AudioPANameCmd;
 
                 if (strResult.IndexOf("max98390xx", StringComparison.OrdinalIgnoreCase) == -1) // Not Max Audio Chip
                 {
@@ -1270,7 +1404,8 @@ namespace F002520
                     return false;    
                 }
                 MAX98390L_TROOM_AFTER = strResult.ToUpper();
-                m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = strResult.ToUpper();
+                m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
+                frmMain.m_stTestSaveData.TestRecord.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
                 DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_AFTER);
 
                 // MAX98390L_RDC
@@ -1281,7 +1416,8 @@ namespace F002520
                     return false;
                 }
                 MAX98390L_RDC_AFTER = strResult.ToUpper();
-                m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = strResult.ToUpper();
+                m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
+                frmMain.m_stTestSaveData.TestRecord.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
                 DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_AFTER);
 
                 #endregion
@@ -1295,6 +1431,8 @@ namespace F002520
                 }
 
                 #endregion
+
+                frmMain.m_stTestSaveData.TestRecord.TestAudioCalibration = "Pass";
             }
             catch (Exception ex)
             {
@@ -1302,7 +1440,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -1313,8 +1450,9 @@ namespace F002520
             bool bRes = false;
             string strCmd = "";
             string strResult = "";
-
             string OFFSETVALUE = "";
+
+            frmMain.m_stTestSaveData.TestRecord.TestBarometerCalibration = "Fail";
 
             try
             {
@@ -1329,7 +1467,7 @@ namespace F002520
                     strErrorMessage = "Fail to parse OFFSETVALUE parameter !";
                     return false;
                 }
-                DisplayMessage("Param OFFSETVALUE: " + OFFSETVALUE);
+                DisplayMessage("Param OffsetValue: " + OFFSETVALUE);
 
                 #endregion
 
@@ -1338,13 +1476,13 @@ namespace F002520
                 if (m_bIsWWAN == false) // WLAN
                 {
                     DisplayMessage("This is WLAN Model, Skip to do Offset !!!");
-                    return false;
+                    return true;
                 }
 
                 if(m_bIsTDKBaroSensor == false) // TDK?
                 {
                     DisplayMessage("This is not TDK Barometric Sensor, Skip to do Offset !!!");
-                    return false;
+                    return true;
                 }
 
                 #endregion
@@ -1382,6 +1520,8 @@ namespace F002520
                 DisplayMessage("Write Offset Value Success.");
 
                 m_stUnitDeviceInfo.OFFSET_VALUE = OFFSETVALUE;
+                frmMain.m_stTestSaveData.TestRecord.BarometerOffsetValue = OFFSETVALUE;
+                frmMain.m_stTestSaveData.TestRecord.TestBarometerCalibration = "Pass";
 
                 #endregion   
             }
@@ -1391,7 +1531,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -1436,8 +1575,9 @@ namespace F002520
                 {
                     DisplayMessage("Use adb reboot to shut down device ...");
                     bRes = AdbRebootDevice();
+                    clsUtil.Dly(3.0);           // must add delay
                 }
-                else if (REBOOT_MODE == "APK")  // apk reboot
+                else if (REBOOT_MODE == "APK")  // apk reboot, not real reboot indeed.
                 {
                     DisplayMessage("Use Apk cmd to shut down device ...");
                     bRes = ApkRebootDevice(APK_CMD);
@@ -1456,7 +1596,6 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
             return true; 
         }
 
@@ -1470,6 +1609,7 @@ namespace F002520
                 DisplayMessage("Eject USB Pogopin");
                 NISetDigital(0, 0, 0);  // DO0_0 L
                 NISetDigital(0, 1, 1);  // DO0_1 H
+
             }
             catch (Exception ex)
             {
@@ -1477,7 +1617,46 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Completed !!!");
+            return true; 
+        }
+
+        public override bool SendDataToMDCS()
+        {
+            string strErrorMessage = "";
+
+            try
+            { 
+            
+
+
+
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true; 
+        }
+
+        public override bool SendMES()
+        {
+            string strErrorMessage = "";
+
+            try
+            {
+
+
+
+
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
             return true; 
         }
 
@@ -1681,7 +1860,6 @@ namespace F002520
                 #region Read MFG Data
 
                 strCmd = "adb shell su 0 mfg-tool -p";
-
                 if (clsProcess.ExcuteCmd(strCmd, 1000, ref LineData) == false)
                 {
                     strErrorMessage = "Excute cmd fail: " + strCmd;
@@ -1750,18 +1928,21 @@ namespace F002520
                     if (key == "EX_CONFIGURATION_NUMBER")
                     {
                         m_stUnitDeviceInfo.ConfigNumber = dic_MFGData[key];
+                        frmMain.m_stTestSaveData.TestRecord.ConfigurationNumber = dic_MFGData[key];
                         Logger.Info("EX_CONFIGURATION_NUMBER={0}", dic_MFGData[key]);
                     }
                     // Serial Number: 21352B4497
                     else if (key == "EX_SERIAL_NUMBER")
                     {
                         m_stUnitDeviceInfo.SN = dic_MFGData[key];
+                        frmMain.m_stTestSaveData.TestRecord.SN = dic_MFGData[key];
                         Logger.Info("EX_SERIAL_NUMBER={0}", dic_MFGData[key]);
                     }
                     // Part Number: CT40P-L1N-27R11BE
                     else if (key == "EX_PART_NUMBER")
                     {
                         m_stUnitDeviceInfo.SKU = dic_MFGData[key];
+                        frmMain.m_stTestSaveData.TestRecord.SKU = dic_MFGData[key];
                         Logger.Info("EX_PART_NUMBER={0}", dic_MFGData[key]);
                     }
                     // Mac Address: 001020f43e0c
@@ -1791,8 +1972,9 @@ namespace F002520
                     // Model Number: CT40
                     else if (key == "MODEL_NUMBER")
                     {
-                        m_stUnitDeviceInfo.Model = dic_MFGData[key];
-                        Logger.Info("MODEL_NUMBER={0}", dic_MFGData[key]);
+                        m_stUnitDeviceInfo.Model = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.Model = dic_MFGData[key].ToUpper();
+                        Logger.Info("MODEL_NUMBER={0}", dic_MFGData[key].ToUpper());
                     }
                     // Android License:
                     //else if (key == "ANDROID_LICENSE")
@@ -1802,74 +1984,99 @@ namespace F002520
                     // IMEI1: 990016300436126
                     else if (key == "IMEI_NUMBER")
                     {
-                        m_stUnitDeviceInfo.IMEI = dic_MFGData[key];
-                        Logger.Info("IMEI_NUMBER={0}", dic_MFGData[key]);
+                        m_stUnitDeviceInfo.IMEI = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.IMEI = dic_MFGData[key].ToUpper();
+                        Logger.Info("IMEI_NUMBER={0}", dic_MFGData[key].ToUpper());
                     }
                     // MEID1: 99001630043612
                     else if (key == "MEID_NUMBER")
                     {
-                        m_stUnitDeviceInfo.MEID = dic_MFGData[key];
-                        Logger.Info("MEID_NUMBER={0}", dic_MFGData[key]);
+                        m_stUnitDeviceInfo.MEID = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.MEID = dic_MFGData[key].ToUpper();
+                        Logger.Info("MEID_NUMBER={0}", dic_MFGData[key].ToUpper());
                     }
                     // IMEI2
                     else if (key == "IMEI_NUMBER_2")
                     {
-                        m_stUnitDeviceInfo.IMEI2 = dic_MFGData[key];    
-                        Logger.Info("IMEI_NUMBER_2={0}", dic_MFGData[key]);
+                        m_stUnitDeviceInfo.IMEI2 = dic_MFGData[key].ToUpper();    
+                        frmMain.m_stTestSaveData.TestRecord.IMEI2 = dic_MFGData[key].ToUpper();
+                        Logger.Info("IMEI_NUMBER_2={0}", dic_MFGData[key].ToUpper());
                     }
                     // MEID2
                     else if (key == "MEID_NUMBER_2")
                     {
-                        m_stUnitDeviceInfo.MEID2 = dic_MFGData[key];
-                        Logger.Info("MEID_NUMBER_2={0}", dic_MFGData[key]);
+                        m_stUnitDeviceInfo.MEID2 = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.MEID2 = dic_MFGData[key].ToUpper();
+                        Logger.Info("MEID_NUMBER_2={0}", dic_MFGData[key].ToUpper());
                     }
+                    // HARDWARE_VERSION
+                    else if (key == "HARDWARE_VERSION")
+                    {
+                        frmMain.m_stTestSaveData.TestRecord.HWVersion = dic_MFGData[key].ToUpper();
+                        Logger.Info("HARDWARE_VERSION={0}", dic_MFGData[key].ToUpper());
+                    }
+                    // PCB_VENDOR
+                    else if (key == "PCB_VENDOR")
+                    {
+                        frmMain.m_stTestSaveData.TestRecord.PCBAVendor = dic_MFGData[key].ToUpper();
+                        Logger.Info("PCB_VENDOR={0}", dic_MFGData[key].ToUpper());
+                    }
+
                     // Before Calibration MDB Value
                     // ACCEL_ZERO_OFFSET
                     else if (key == "ACCEL_ZERO_OFFSET")
                     {
                         m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.ACCEL_ZERO_OFFSET_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("ACCEL_ZERO_OFFSET={0}", dic_MFGData[key].ToUpper());
                     }
                     // ACCELEROMETER_CALIBRATION
                     else if (key == "ACCELEROMETER_CALIBRATION")
                     {
                         m_stUnitDeviceInfo.ACCELEROMETER_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.ACCELEROMETER_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("ACCELEROMETER_CALIBRATION={0}", dic_MFGData[key].ToUpper());
                     }
                     // GYRO_ZERO_OFFSET
                     else if (key == "GYRO_ZERO_OFFSET")
                     {
                         m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.GYRO_ZERO_OFFSET_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("GYRO_ZERO_OFFSET={0}", dic_MFGData[key].ToUpper());
                     }
                     // GYROSCOPE_CALIBRATION
                     else if (key == "GYROSCOPE_CALIBRATION")
                     {
                         m_stUnitDeviceInfo.GYROSCOPE_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.GYROSCOPE_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("GYROSCOPE_CALIBRATION={0}", dic_MFGData[key].ToUpper());
                     }
                     // PROXIMITY_CALIBRATION
                     else if (key == "PROXIMITY_CALIBRATION")
                     {
                         m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.PROXIMITY_CALIBRATION_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("PROXIMITY_CALIBRATION={0}", dic_MFGData[key].ToUpper());
                     }
                     // PROXIMITY_CALIBRATION_EXTEND
                     else if (key == "PROXIMITY_CALIBRATION_EXTEND")
                     {
                         m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.PROXIMITY_CALIBRATION_EXTEND_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("PROXIMITY_CALIBRATION_EXTEND={0}", dic_MFGData[key].ToUpper());
                     }
                     // MAX98390L_TROOM
                     else if (key == "MAX98390L_TROOM")
                     {
                         m_stUnitDeviceInfo.MAX98390L_TROOM_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.MAX98390L_TROOM_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("MAX98390L_TROOM={0}", dic_MFGData[key].ToUpper());
                     }
                     // MAX98390L_RDC
                     else if (key == "MAX98390L_RDC")
                     {
                         m_stUnitDeviceInfo.MAX98390L_RDC_BEFORE = dic_MFGData[key].ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.MAX98390L_RDC_BEFORE = dic_MFGData[key].ToUpper();
                         Logger.Info("MAX98390L_RDC={0}", dic_MFGData[key].ToUpper());
                     }
                 }
@@ -1894,7 +2101,7 @@ namespace F002520
                 }
                 // Truncate Model
                 int index = strSKU.IndexOf("-");
-                string skuModel = strSKU.Substring(0, index);
+                string skuModel = strSKU.Substring(0, index).Trim();
 
                 // MODEL
                 string strModel = m_stUnitDeviceInfo.Model;
@@ -1908,11 +2115,14 @@ namespace F002520
                     strErrorMessage = "Read MDB Model Not Match SKU Model !!!";
                     return false;
                 }
-                if (strModel.Contains(Program.g_mainForm.m_strModel) == false)
+                if (strModel.Contains(Program.g_mainForm.m_strModel) == false)  // take care !!!
                 {
                     MessageBox.Show("The Product Not Match the Production Line That You Selected !!!");
                     return false;
                 }
+
+                Program.g_mainForm.m_strModel = strModel;   // Confirm Device Model
+
                 // ISWWAN
                 if (strModel == "CT45")
                 {
@@ -1964,6 +2174,38 @@ namespace F002520
                 }
 
                 #endregion
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ReadOSVersion(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+            string strCmd = "";
+            string strResult = "";
+
+            try
+            {
+                DisplayMessage("Read Andriod OS Version.");
+                strCmd = "adb shell su 0 getprop ro.build.display.id";
+                DisplayMessage("Send CMD: " + strCmd);
+
+                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);      
+                DisplayMessage("Res: " + strResult);
+                if (string.IsNullOrWhiteSpace(strResult))
+                {
+                    strErrorMessage = "Fail to read andriod OS version.";
+                    return false;
+                }
+
+                frmMain.m_stTestSaveData.TestRecord.AndroidOSVersion = strResult;    
             }
             catch(Exception ex)
             {
@@ -2294,7 +2536,7 @@ namespace F002520
 
                 #region Check Sensor Whether Exist In Sensor_List
 
-                if (CheckSensorExist(strFilePath, ref bPSensor, ref bGSensor, ref bBarometerSensor, ref strErrorMessage) == false)
+                if (CheckSensorExist(strFilePath, ref bPSensor, ref bGSensor, ref strErrorMessage) == false)
                 {
                     return false;
                 }
@@ -2302,18 +2544,22 @@ namespace F002520
                 if (bPSensor == false)
                 {
                     strErrorMessage = "This device doesn't have PSensor !!!";
+                    DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
+            
                 if (bGSensor == false)
                 {
                     strErrorMessage = "This device doesn't have GSensor !!!";
+                    DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
-                if (bBarometerSensor == false)
-                {
-                    strErrorMessage = "This device doesn't have Barometer Sensor !!!";
-                    return false;
-                }
+                //if (bBarometerSensor == false)
+                //{
+                //    strErrorMessage = "This device doesn't have Barometer Sensor !!!";
+                //    return false;
+                //}
+                DisplayMessage("PSensor and GSensor Exist.");
 
                 #endregion
             }
@@ -2352,13 +2598,14 @@ namespace F002520
             return true;
         }
 
-        private bool CheckSensorExist(string strFilePath, ref bool IsPSensorExist, ref bool IsGSensorExist, ref bool IsBaroSensorExist, ref string strErrorMessage)
+        private bool CheckSensorExist(string strFilePath, ref bool IsPSensorExist, ref bool IsGSensorExist, ref string strErrorMessage)
         {
             strErrorMessage = "";
             IsPSensorExist = false;
             IsGSensorExist = false;
-            IsBaroSensorExist = false;
 
+            //bool IsBaroSensorExist = false;
+       
             try
             { 
                 DisplayMessage("Check PSensor and GSensor Exist");
@@ -2383,23 +2630,26 @@ namespace F002520
                 }
 
                 // Check Barometer Vendor Whether TDK
-                string Line = "";
-                string Vendor = "";
-                for (int i = 0; i < FileArray.Length; i++)
+                if (m_bIsWWAN == true)
                 {
-                    Line = FileArray[i];
-                    if (Line.Contains(BarometerName))
+                    string Line = "";
+                    string Vendor = "";
+                    for (int i = 0; i < FileArray.Length; i++)
                     {
-                        IsBaroSensorExist = true;
-
-                        Vendor = FileArray[i+1];
-                        if (Vendor.Contains("TDK"))
+                        Line = FileArray[i];
+                        if (Line.Contains(BarometerName))
                         {
-                            m_bIsTDKBaroSensor = true;
-                            break;
+                            //IsBaroSensorExist = true;
+                            Vendor = FileArray[i + 1];
+                            if (Vendor.Contains("TDK"))
+                            {
+                                m_bIsTDKBaroSensor = true;
+                                break;
+                            }
                         }
-                    }
+                    }   
                 } 
+          
             }
             catch(Exception ex)
             {
@@ -2436,7 +2686,8 @@ namespace F002520
 
                 DisplayMessage("Move Dame Board to Near-Position, Make sure distance is: " + strNearPosition + "cm.");
                 double dDistance = Convert.ToDouble(strNearPosition);
-                double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
+                double dHome = Convert.ToDouble(clsConfigHelper.servoMotor.Home);
+                //double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
 
                 if (MoveDamBoardDown(dDistance, dHome, ref strErrorMessage) == false)
                 {
@@ -2517,7 +2768,8 @@ namespace F002520
 
                 DisplayMessage("Move Dame Board to Far-Position, Make sure distance is: " + strFarPosition + "cm.");
                 double dDistance = Convert.ToDouble(strFarPosition);
-                double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
+                //double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
+                double dHome = Convert.ToDouble(clsConfigHelper.servoMotor.Home);
 
                 if (MoveDamBoardUp(dDistance, dHome, ref strErrorMessage) == false)
                 {

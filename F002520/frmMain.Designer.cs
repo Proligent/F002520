@@ -49,12 +49,12 @@
             this.lblTestResult = new System.Windows.Forms.Label();
             this.panelTestMode = new System.Windows.Forms.Panel();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
-            this.radiobutManual = new System.Windows.Forms.RadioButton();
-            this.radiobutAuto = new System.Windows.Forms.RadioButton();
+            this.radiobtnManual = new System.Windows.Forms.RadioButton();
+            this.radiobtnAuto = new System.Windows.Forms.RadioButton();
             this.panelMDCS = new System.Windows.Forms.Panel();
             this.groupBox3 = new System.Windows.Forms.GroupBox();
-            this.radioButton2 = new System.Windows.Forms.RadioButton();
-            this.radioButProduction = new System.Windows.Forms.RadioButton();
+            this.radioBtnTest = new System.Windows.Forms.RadioButton();
+            this.radioBtnProduction = new System.Windows.Forms.RadioButton();
             this.panelInfo = new System.Windows.Forms.Panel();
             this.panelVersion = new System.Windows.Forms.Panel();
             this.lblVersion = new System.Windows.Forms.Label();
@@ -247,7 +247,7 @@
             // 
             this.lblTestItem.BackColor = System.Drawing.Color.DarkGray;
             this.lblTestItem.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.lblTestItem.Font = new System.Drawing.Font("Courier New", 13.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lblTestItem.Font = new System.Drawing.Font("Courier New", 16.2F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lblTestItem.ForeColor = System.Drawing.Color.Black;
             this.lblTestItem.Location = new System.Drawing.Point(5, 32);
             this.lblTestItem.Name = "lblTestItem";
@@ -345,8 +345,8 @@
             // 
             // groupBox2
             // 
-            this.groupBox2.Controls.Add(this.radiobutManual);
-            this.groupBox2.Controls.Add(this.radiobutAuto);
+            this.groupBox2.Controls.Add(this.radiobtnManual);
+            this.groupBox2.Controls.Add(this.radiobtnAuto);
             this.groupBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox2.Font = new System.Drawing.Font("Courier New", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox2.ForeColor = System.Drawing.SystemColors.ControlDark;
@@ -357,31 +357,31 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "TestMode:";
             // 
-            // radiobutManual
+            // radiobtnManual
             // 
-            this.radiobutManual.AutoSize = true;
-            this.radiobutManual.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.radiobutManual.ForeColor = System.Drawing.SystemColors.Control;
-            this.radiobutManual.Location = new System.Drawing.Point(156, 28);
-            this.radiobutManual.Name = "radiobutManual";
-            this.radiobutManual.Size = new System.Drawing.Size(97, 26);
-            this.radiobutManual.TabIndex = 0;
-            this.radiobutManual.TabStop = true;
-            this.radiobutManual.Text = "Manual";
-            this.radiobutManual.UseVisualStyleBackColor = true;
+            this.radiobtnManual.AutoSize = true;
+            this.radiobtnManual.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radiobtnManual.ForeColor = System.Drawing.SystemColors.Control;
+            this.radiobtnManual.Location = new System.Drawing.Point(156, 28);
+            this.radiobtnManual.Name = "radiobtnManual";
+            this.radiobtnManual.Size = new System.Drawing.Size(97, 26);
+            this.radiobtnManual.TabIndex = 0;
+            this.radiobtnManual.TabStop = true;
+            this.radiobtnManual.Text = "Manual";
+            this.radiobtnManual.UseVisualStyleBackColor = true;
             // 
-            // radiobutAuto
+            // radiobtnAuto
             // 
-            this.radiobutAuto.AutoSize = true;
-            this.radiobutAuto.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.radiobutAuto.ForeColor = System.Drawing.SystemColors.Control;
-            this.radiobutAuto.Location = new System.Drawing.Point(12, 28);
-            this.radiobutAuto.Name = "radiobutAuto";
-            this.radiobutAuto.Size = new System.Drawing.Size(75, 26);
-            this.radiobutAuto.TabIndex = 0;
-            this.radiobutAuto.TabStop = true;
-            this.radiobutAuto.Text = "Auto";
-            this.radiobutAuto.UseVisualStyleBackColor = true;
+            this.radiobtnAuto.AutoSize = true;
+            this.radiobtnAuto.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radiobtnAuto.ForeColor = System.Drawing.SystemColors.Control;
+            this.radiobtnAuto.Location = new System.Drawing.Point(12, 28);
+            this.radiobtnAuto.Name = "radiobtnAuto";
+            this.radiobtnAuto.Size = new System.Drawing.Size(75, 26);
+            this.radiobtnAuto.TabIndex = 0;
+            this.radiobtnAuto.TabStop = true;
+            this.radiobtnAuto.Text = "Auto";
+            this.radiobtnAuto.UseVisualStyleBackColor = true;
             // 
             // panelMDCS
             // 
@@ -396,8 +396,8 @@
             // 
             // groupBox3
             // 
-            this.groupBox3.Controls.Add(this.radioButton2);
-            this.groupBox3.Controls.Add(this.radioButProduction);
+            this.groupBox3.Controls.Add(this.radioBtnTest);
+            this.groupBox3.Controls.Add(this.radioBtnProduction);
             this.groupBox3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox3.Font = new System.Drawing.Font("Courier New", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.groupBox3.ForeColor = System.Drawing.SystemColors.ControlDark;
@@ -408,31 +408,31 @@
             this.groupBox3.TabStop = false;
             this.groupBox3.Text = "MDCS:";
             // 
-            // radioButton2
+            // radioBtnTest
             // 
-            this.radioButton2.AutoSize = true;
-            this.radioButton2.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.radioButton2.ForeColor = System.Drawing.SystemColors.Control;
-            this.radioButton2.Location = new System.Drawing.Point(178, 42);
-            this.radioButton2.Name = "radioButton2";
-            this.radioButton2.Size = new System.Drawing.Size(75, 26);
-            this.radioButton2.TabIndex = 0;
-            this.radioButton2.TabStop = true;
-            this.radioButton2.Text = "Test";
-            this.radioButton2.UseVisualStyleBackColor = true;
+            this.radioBtnTest.AutoSize = true;
+            this.radioBtnTest.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radioBtnTest.ForeColor = System.Drawing.SystemColors.Control;
+            this.radioBtnTest.Location = new System.Drawing.Point(178, 42);
+            this.radioBtnTest.Name = "radioBtnTest";
+            this.radioBtnTest.Size = new System.Drawing.Size(75, 26);
+            this.radioBtnTest.TabIndex = 0;
+            this.radioBtnTest.TabStop = true;
+            this.radioBtnTest.Text = "Test";
+            this.radioBtnTest.UseVisualStyleBackColor = true;
             // 
-            // radioButProduction
+            // radioBtnProduction
             // 
-            this.radioButProduction.AutoSize = true;
-            this.radioButProduction.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.radioButProduction.ForeColor = System.Drawing.SystemColors.Control;
-            this.radioButProduction.Location = new System.Drawing.Point(12, 42);
-            this.radioButProduction.Name = "radioButProduction";
-            this.radioButProduction.Size = new System.Drawing.Size(141, 26);
-            this.radioButProduction.TabIndex = 0;
-            this.radioButProduction.TabStop = true;
-            this.radioButProduction.Text = "Production";
-            this.radioButProduction.UseVisualStyleBackColor = true;
+            this.radioBtnProduction.AutoSize = true;
+            this.radioBtnProduction.Font = new System.Drawing.Font("Courier New", 10.8F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.radioBtnProduction.ForeColor = System.Drawing.SystemColors.Control;
+            this.radioBtnProduction.Location = new System.Drawing.Point(12, 42);
+            this.radioBtnProduction.Name = "radioBtnProduction";
+            this.radioBtnProduction.Size = new System.Drawing.Size(141, 26);
+            this.radioBtnProduction.TabIndex = 0;
+            this.radioBtnProduction.TabStop = true;
+            this.radioBtnProduction.Text = "Production";
+            this.radioBtnProduction.UseVisualStyleBackColor = true;
             // 
             // panelInfo
             // 
@@ -692,10 +692,10 @@
         private System.Windows.Forms.PictureBox picBoxLogo;
         private System.Windows.Forms.GroupBox groupBox3;
         private System.Windows.Forms.Panel panelTestResult;
-        private System.Windows.Forms.RadioButton radiobutManual;
-        private System.Windows.Forms.RadioButton radiobutAuto;
-        private System.Windows.Forms.RadioButton radioButton2;
-        private System.Windows.Forms.RadioButton radioButProduction;
+        private System.Windows.Forms.RadioButton radiobtnManual;
+        private System.Windows.Forms.RadioButton radiobtnAuto;
+        private System.Windows.Forms.RadioButton radioBtnTest;
+        private System.Windows.Forms.RadioButton radioBtnProduction;
         private System.Windows.Forms.Panel panelButton;
         private System.Windows.Forms.Label lblTestResult;
         private System.Windows.Forms.Button btnStop;

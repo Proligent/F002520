@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?> 
+﻿<?xml version="1.0" encoding="utf-8" ?>
 
 <Configuration>
 
@@ -8,27 +8,25 @@
     <Item Name="TestCheckDeviceReady" Enable="TRUE"/>
     <Item Name="TestMoveDamBoardUp" Enable="TRUE"/>
     <Item Name="TestReadMFGData" Enable="TRUE"/>
-    <Item Name="TestCheckRFResult" Enable="FALSE"/>  
+    <Item Name="TestCheckRFResult" Enable="FALSE"/>
     <Item Name="TestCheckPreStation" Enable="TRUE"/>
     <Item Name="TestAutoChangeOver" Enable="TRUE"/>
     <Item Name="TestScreenOff" Enable="TRUE"/>
     <Item Name="TestCheckSensorList" Enable="TRUE"/>
     <Item Name="TestGSensorCalibation" Enable="TRUE"/>
-    <Item Name="TestGYROSensorCalibration" Enable="FALSE"/>
+    <Item Name="TestGYROSensorCalibration" Enable="TRUE"/>
     <Item Name="TestPSensorCalibration" Enable="TRUE"/>
     <Item Name="TestPSensorFunction" Enable="TRUE"/>
     <Item Name="TestAudioCalibration" Enable="TRUE"/>
     <Item Name="TestBarometerSensorOffset" Enable="TRUE"/>
     <Item Name="TestReboot" Enable="TRUE"/>
     <Item Name="TestEnd" Enable="TRUE"/>
-    <Item Name="TestSendMES" Enable="TRUE"/>
-    <Item Name="TestSendMDCS" Enable="TRUE"/>
   </TestItemList>
 
-  
+
   <TestItemParameterList>
-    
-    <TestInit> 
+
+    <TestInit>
     </TestInit>
 
     <TestPowerOn>
@@ -37,7 +35,7 @@
     <TestCheckDeviceReady>
       <ReConnectTimes>3</ReConnectTimes>
     </TestCheckDeviceReady>
-    
+
     <TestReadMFGData>
     </TestReadMFGData>
 
@@ -47,24 +45,23 @@
       <DelayAfter>0</DelayAfter>
     </TestCheckRFResult>
 
-    <TestCheckPreStation>  
-      <PreStationDeviceName>F002294_EDA51_RF_Fixture</PreStationDeviceName>
-      <VarName>FailCode</VarName>
+    <TestCheckPreStation>
+      <PreStationDeviceName>F002458_CT45_RF_Fixture|F002458_CT45P_RF_Fixture</PreStationDeviceName>
+      <VarName>failcode</VarName>
       <VarTargetResult>0</VarTargetResult>
-      <URL>"http://hsm-mdcsws-ch3u.honeywell.com/MDCSWebService/MDCSService.asmx"</URL>
     </TestCheckPreStation>
-    
+
     <TestAutoChangeOver>
-      <MESStation>SC</MESStation>
+      <!--<MESStation>SC</MESStation>-->
       <ScanSheetStation>SC</ScanSheetStation>
-      <SWVersionControl>TRUE</SWVersionControl>
+      <SWVersionControl>FALSE</SWVersionControl>
     </TestAutoChangeOver>
 
     <TestScreenOff>
     </TestScreenOff>
 
     <TestMoveDamBoardUp>
-      <Home>19.7</Home>
+      <!--<Home>19.7</Home>-->
       <Position>5.0</Position>
     </TestMoveDamBoardUp>
 
@@ -75,7 +72,7 @@
       <CalibrationCmd>adb shell ssc_drva_test -sensor=accel -factory_test=2 -duration=10</CalibrationCmd>
       <GetMDBCmd>adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET</GetMDBCmd>
     </TestGSensorCalibation>
-    
+
     <TestGYROSensorCalibration>
       <CalibrationCmd>adb shell ssc_drva_test -sensor=gyro -factory_test=2 -duration=10</CalibrationCmd>
       <GetMDBCmd>adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET</GetMDBCmd>
@@ -111,17 +108,22 @@
     <TestEnd>
     </TestEnd>
     
-    <TestSendMES>
-      <StationName>SC</StationName>
-    </TestSendMES>
-
-    <TestSendMDCS>
-      <!--Production | Test-->
-      <MDCSMode>Production</MDCSMode>
-      <DeviceName>F002357_EDA51_BIT_Fixture</DeviceName>
-      <URL>"http://hsm-mdcsws-ch3u.honeywell.com/MDCSWebService/MDCSService.asmx"</URL>   
-    </TestSendMDCS>
-    
   </TestItemParameterList>
+
   
+  <TestConfig>
+  
+    <MES>
+      <Enable>TRUE</Enable>
+      <Station>SC</Station>
+    </MES>
+
+    <MDCS>
+      <Enable>TRUE</Enable>
+      <DeviceName>F002520_CT45_SensorK_Fixture|F002520_CT45P_SensorK_Fixture</DeviceName>
+      <URL>http://hsm-mdcsws-ch3u.honeywell.com/MDCSWebService/MDCSService.asmx</URL>
+    </MDCS>
+
+  </TestConfig>
+
 </Configuration>

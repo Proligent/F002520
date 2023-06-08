@@ -52,6 +52,11 @@ namespace F002520
             throw new NotImplementedException();
         }
 
+        public override bool TestCheckRFResult()
+        {
+            throw new NotImplementedException();
+        }
+
         public override bool TestCheckPreStation()
         {
             throw new NotImplementedException();
@@ -113,6 +118,16 @@ namespace F002520
         }
 
         public override bool TestEnd()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool SendDataToMDCS()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool SendMES()
         {
             throw new NotImplementedException();
         }

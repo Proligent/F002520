@@ -12,6 +12,7 @@ using SmartFactory.ExternalDLL;
 using F002520.Properties;
 using System.IO;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace F002520
 {
@@ -43,46 +44,24 @@ namespace F002520
 
             // AutoChangeOver
             public string AutoChangeOver;
-            //public string ScanSheetStation;
-
+          
             // MES
             public string MES_Enable;
             public string MES_Station;
-
-            // Software Version Control
-            //public string SWVersionControl;
-
-            // XML
-            public string TestItemXMLFile;
-            public string EquipmentXMLFile;
-
-            // DAQ
-            public string DAQDevice;
-
-            // PLC
-            public string PLCIP;
-            public string PLCPort;
-            public int ReadDB;
-            public int WriteDB;
-            public string Location;
-
-            // MODBUS
-            public ComPortSetting ModbusSetting;
-            public string Home;
-
-            // MES
-            //public string MESEnable;
-            //public string MESStation;
 
             // MDCS
             //public string MDCSEnable;
             //public string MDCSMode;
             //public string MDCSURL;
-            //public string MDCSDeviceName;      
+            //public string MDCSDeviceName;
             //public string PreStationResultCheck;
             //public string PreStationDeviceName;
             //public string PreStationVarName;
-            //public string PreStationVarValue;    
+            //public string PreStationVarValue;
+
+            // XML
+            public string TestItemXMLFile;
+            public string EquipmentXMLFile;
         }
 
         #endregion
@@ -90,23 +69,19 @@ namespace F002520
         #region Variable
 
         private bool m_bStop = false;
-        private bool m_bRunning = false;
         private bool m_bRunInitialized = false;
-        //private int m_nProductID = 0;
+        public static bool m_bMESEnable = false;
 
-        private string m_strSKU = "";
-        public string m_strModel = "";
         private ModelID m_Type;
+        private string m_strSKU = "";
+        public string m_strModel = "";    
         public static string m_strTestItemXMLFile = "";
         public static string m_strEquipmentXMLFile = "";
 
         private MCFData m_stMCFData = new MCFData();
         private MESData m_stMESData = new MESData();
-        //private UnitDeviceInfo m_stUnitDeviceInfo = new UnitDeviceInfo();
-
-        private List<string> m_TestItemList = new List<string>();
         public OptionData m_stOptionData = new OptionData();
-        private clsConfigHelper m_objXmlConfig = new clsConfigHelper();
+        private List<string> m_TestItemList = new List<string>();  
         public clsEquipmentInitial m_objEquipmentInitial = new clsEquipmentInitial();
 
  
@@ -114,21 +89,17 @@ namespace F002520
         private clsPLCDaveHelper m_PLC;
         private string sErrorPlcThread = "";
         private string sResultPlcThread = "";
-        //private string sPLCEnableReadBarcode = "";
         private System.Threading.Timer PLCTimer = null;
         private System.Threading.Timer PLCWatchDog = null;
-        private int iWtchDog = 0;
-        private bool isTestRun = true; // true:没有测试  false:测试中
-        private bool isPLCRun = false;
+        private int iWatchDog = 0;
+        private bool isTestRunning = false; // true:测试中  false:空闲
+        private bool isPLCConnected = false;
         private bool isManual = false;
         private bool bPLCThreadRun = false;
-
-
 
         // MES
 
         // MDCS
-        public clsMDCS m_objMDCS;
         public static TestSaveData m_stTestSaveData = new TestSaveData();
 
         #endregion
@@ -148,6 +119,9 @@ namespace F002520
         private void frmMain_Load(object sender, EventArgs e)
         {
             string strErrorMessage = "";
+            isTestRunning = false;
+            isPLCConnected = false;
+
             lblTitleBar.Text = Program.g_strToolNumber + " Sensor Calibration Fixture";
             lblVersion.Text = Program.g_strToolRev;
 
@@ -155,7 +129,7 @@ namespace F002520
             log4net.GlobalContext.Properties["DATE"] = DateTime.Now.ToString("yyyy-MM-dd");
             log4net.GlobalContext.Properties["LogFileName"] = "Prepare";
             log4net.Config.XmlConfigurator.Configure(new FileInfo("log4net.config"));
-            Logger.Info("Form Load");
+            Logger.Info("MainForm Loading ...");
 
             // Init Run
             if (InitRun(ref strErrorMessage) == false)
@@ -167,15 +141,66 @@ namespace F002520
             }
         
             InitCompleted();
-            Logger.Info("Load Completed.");
 
+            Logger.Info("MainForm Load Completed.");
             return;
         }
 
         private void frmMain_FormClosing(object sender, FormClosingEventArgs e)
         {
+            string strErrorMessage = "";
 
-            //ReleaseHW();
+            ReleaseHW(ref strErrorMessage);
+
+            #region PLC
+
+            if (PLCTimer != null)
+            {
+                PLCTimer.Dispose();
+                PLCTimer = null;
+            }
+            if (PLCWatchDog != null)
+            {
+                PLCWatchDog.Dispose();
+                PLCWatchDog = null;
+            }
+
+            if (isPLCConnected == true)
+            {
+                m_PLC.DisConnect(ref strErrorMessage);
+            }
+
+            // PLC ERROR (配合PLC 解决 PLC Bug)
+            if (isPLCConnected == true)
+            {
+                bool bFlag = false;
+                string strError = "";
+                for (int i = 0; i < 3; i++)
+                {
+                    DisplayMessage("PLC:Send, ERROR Status", "ERROR");
+                    if (m_PLC.CurrentStatusReturn(clsConfigHelper.plcConfig.WriteDB, clsPLCDaveHelper.ReturnStatus.ERROR, ref strError))
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                    else
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                }
+                if (bFlag == false)
+                {       
+                    DisplayMessage("PLC:Send ERROR Status Fail." + strError, "ERROR");
+                    return;
+                }
+
+                DisplayMessage("PLC:Send ERROR Status Success.");
+            }
+
+            #endregion
+
         }
 
         #endregion
@@ -275,52 +300,7 @@ namespace F002520
 
         #region Function
 
-        #region Obsolote
-
-        //private bool SelectModelRun(ref string strErrorMessage)
-        //{
-        //    if (m_nProductID == 0)
-        //    {
-        //        strErrorMessage = "Invalid Product ID !!!";
-        //        return false;
-        //    }
-
-        //    switch(m_nProductID)
-        //    {
-        //        case (int)ModelID.CT40:
-        //        case (int)ModelID.CT40P:
-        //            m_objSensorK = new clsCT40SensorK();
-        //            m_objSensorK.Start();
-        //            break;
-
-        //        case (int)ModelID.CT45:
-        //        case (int)ModelID.CT45P:
-        //            m_objSensorK = new clsCT45SensorK();
-        //            m_objSensorK.Start();
-        //            break;
-
-        //        case (int)ModelID.CT47:
-        //            m_objSensorK = new clsCT47SensorK();
-        //            m_objSensorK.Start();
-        //            break;
-
-        //        case (int)ModelID.CW45:
-        //            m_objSensorK = new clsCW45SensorK();
-        //            m_objSensorK.Start();
-        //            break;
-
-        //        default:
-
-        //            break;
-        //    }
-
-
-        //    strErrorMessage = "";
-        //    return true;
-        //}
-
-        #endregion
-
+    
 
         #region PLC
 
@@ -332,19 +312,20 @@ namespace F002520
 
                 if (m_PLC.Connect(clsConfigHelper.plcConfig.PLCIP, clsConfigHelper.plcConfig.PLCPort, ref sErrorMessage) == false)
                 {
-                    isPLCRun = false;
+                    isPLCConnected = false;
                     m_PLC.DisConnect(ref sErrorMessage);
                     sErrorMessage = "PLC Connect Failure!";
                     return false;
                 }
                 else
                 {
-                    isPLCRun = true;
+                    isPLCConnected = true;
                 }
+                DisplayMessage("Connect PLC success.");
             }
             else
             {
-                isPLCRun = false;
+                isPLCConnected = false;
                 SetManual(true);
             }
 
@@ -367,28 +348,29 @@ namespace F002520
         {
             try
             {
-                iWtchDog %= 255;
+                iWatchDog %= 255;
 
-                if (m_PLC.WatchDogAdd(clsConfigHelper.plcConfig.WriteDB, iWtchDog.ToString()) == false)
+                //Logger.Info("WatchDog: {0}", iWatchDog.ToString("D"));
+                if (m_PLC.WatchDogAdd(clsConfigHelper.plcConfig.WriteDB, iWatchDog.ToString()) == false)
                 {
-                    isPLCRun = false;
+                    isPLCConnected = false;
                     DisplayMessage("PLC:WatchDog fail.");          
                     return;
                 }
                 else
                 {     
-                    iWtchDog++;
+                    iWatchDog++;
                 }
             }
             catch (Exception ex)
             {
-                isPLCRun = false;
+                isPLCConnected = false;
                 DisplayMessage("PLC:WatchDog Exception:" + ex.Message.ToString());   
                 return;
             }
             finally
             {
-                if (isPLCRun == false)
+                if (isPLCConnected == false)
                 {
                     if (PLCConnect() == false)
                     {
@@ -414,11 +396,11 @@ namespace F002520
 
                 #region Product Detect
 
-                if (isTestRun == true && isPLCRun == true)
+                if (isTestRunning == false && isPLCConnected == true)
                 {
                     #region Read Auto/Manual
 
-                    DisplayMessage("PLC:Read Read Auto or Manual.");
+                    DisplayMessage("PLC:Read, Read Auto or Manual.");
                     if (m_PLC.ReadAutoManual(clsConfigHelper.plcConfig.ReadDB, ref sResultPlcThread, ref sErrorPlcThread) == false)
                     {
                         isManual = true;   
@@ -427,11 +409,11 @@ namespace F002520
                         m_PLC.DisConnect(ref sErrorPlcThread);
                     }
                     else
-                    {
-                        DisplayMessage("PLC:Read Read Auto or Manual SUCCESS.");
+                    {              
                         // Auto
                         if (sResultPlcThread == "1")
                         {
+                            DisplayMessage("TestMode = Auto");
                             isManual = false;
                             SetManual(isManual);
                         }
@@ -439,23 +421,30 @@ namespace F002520
                         // Manual
                         else if (sResultPlcThread == "2")
                         {
+                            DisplayMessage("TestMode = Manual");
                             isManual = true;
                             SetManual(isManual);
                         }
                         else
                         {
-                            // NA
-                            //SetAutomationStatus("Invalid");
+                            DisplayMessage("Invalid Auto or Manual Value.", "ERROR");
+                            return;
                         }
+
+                        DisplayMessage("PLC:Read, Read Auto or Manual SUCCESS.");
                     }
 
                     #endregion
 
                     #region ProductDetect
 
-                    DisplayMessage("Detect Product ......");
+                    // 检查USB Pogopin弹出， Holder里面没有产品，给PLC Ready信号，表示当前治具空闲，可以进行测试，
+                    // PLC自动检测待测区域，或者RF测试完，有产品需要抓取，就会自动抓取放到SensorK, 并WaitForSignal返回 1.
+                    // WaitForSignal返回 1，表示机械手正在抓取产品放入SensorK治具，然后返回给PLC Busy信号，表示该治具正在测试中.
+
+                    DisplayMessage("Check Product Ready.");
                     if (ProductDetect(m_objEquipmentInitial.m_objNIDAQ, ref strErrorMessage) == true)
-                    {
+                    {         
                         #region BUSY
 
                         bool bFlag = false;
@@ -473,22 +462,20 @@ namespace F002520
                             }
                         }
                         if (bFlag == false)
-                        {
-                            //SetProductStatus("ERROR");
-                            //FrmMain.TraceLog("PLC:Send BUSY fail.");
-                            //FrmMain.AutomationLog("PLC:Send BUSY status FAIL.");
+                        {  
+                            DisplayMessage("PLC Send Busy Status Fail !!!");
                             return;
                         }
                         else
                         {
-                            //SetProductStatus("BUSY");
-                            //FrmMain.AutomationLog("PLC:Send BUSY status SUCCESS.");
+                            DisplayMessage("PLC Send Busy Status Success.");
                         }
 
                         #endregion
 
                         #region Start
 
+                        DisplayMessage("Start RunTest.");
                         RunStart();
 
                         #endregion
@@ -513,23 +500,22 @@ namespace F002520
         private bool PLCConnect()
         {
             try
-            {
-             
+            {        
                 m_PLC.DisConnect(ref sErrorPlcThread);
                 if (m_PLC.Connect(clsConfigHelper.plcConfig.PLCIP, clsConfigHelper.plcConfig.PLCPort, ref sErrorPlcThread) == false)
                 {
-                    isPLCRun = false;
+                    isPLCConnected = false;
                     DisplayMessage("PLC:Connect fail.");      
                     return false;
                 }
                 else
                 {
-                    isPLCRun = true;
+                    isPLCConnected = true;
                 }
             }
             catch (Exception ex)
             {
-                isPLCRun = false;
+                isPLCConnected = false;
                 DisplayMessage("PLC Connect Exception:" + ex.Message.ToString());        
                 return false;
             }
@@ -555,9 +541,11 @@ namespace F002520
                     bRes = clsNIDAQ.GetAnalog(0, 10, ref dValue_AI0, 0.1);  // AI0
                     bRes = clsNIDAQ.GetAnalog(1, 10, ref dValue_AI1, 0.1);  // AI1
 
+                    Logger.Info("Check USB Pogopin Ejected, AI0: {0} V, AI1: {1} V", dValue_AI0.ToString("F3"), dValue_AI1.ToString("F3"));
                     if ((dValue_AI0 > 3.0) && (dValue_AI1 < 2.0))
                     {
                         bFlag = true;
+                        Logger.Info("USB Pogopin Already Ejected.");
                         break;
                     }
                     else
@@ -574,19 +562,23 @@ namespace F002520
 
                     // Detect Whether Have Product
                     bRes = clsNIDAQ.GetAnalog(2, 10, ref dValue, 0.1);  // AI2
+                    Logger.Info("Check Holder Have Product, AI2: {0} V", dValue.ToString("F3"));
                     if (dValue > 3.0)
                     {
                         m_PLC.CurrentStatusReturn(clsConfigHelper.plcConfig.WriteDB, clsPLCDaveHelper.ReturnStatus.HAVEPRODUCT, ref strErrorMessage);
+                        Logger.Warn("PLC Write: Have Product.");
                     }
                     else
                     {
                         m_PLC.CurrentStatusReturn(clsConfigHelper.plcConfig.WriteDB, clsPLCDaveHelper.ReturnStatus.READY, ref strErrorMessage);
+                        Logger.Info("PLC Write: Holder is Empty, Give PLC Ready Signal.");
                     }
 
                     #endregion
 
                     #region WaitForSignal
 
+                    DisplayMessage("PLC:Read, Wait for PLC Singal.");
                     if (WaitForSignal(ref strErrorMessage) == true)
                     {
                         return true;
@@ -616,27 +608,26 @@ namespace F002520
         private bool WaitForSignal(ref string sError)
         {
             try
-            {
-                DisplayMessage("PLC:Read Wait for PLC Singal.");
+            {       
                 string sResult = "";
                 m_PLC.ReadCommand(clsConfigHelper.plcConfig.ReadDB, ref sResult, ref sError);
+
+                DisplayMessage("Wait for PLC Signal, Res: " + sResult);
                 if (sResult == "1")
                 {
-                    DisplayMessage("PLC:Read Wait for PLC Singal: " + sResult);
                     return true;
                 }
                 else
                 {
-                    sError = "PLC Wait For Singal fail. Res: ";
-                    DisplayMessage(sError + sResult);
+                    sError = "PLC Wait For Singal fail. Res: " + sResult;
+                    //DisplayMessage(sError);
                     return false;
                 }
             }
             catch (Exception ex)
             {
                 sError = "Exception:" + ex.Message;
-                //FrmMain.TraceLog("waitForSingal Exception:" + ex.Message);
-                //FrmMain.AutomationLog("PLC:Read wait for PLC singal exception.");
+                Logger.Error("WaitForSingal Exception:" + ex.Message);
                 return false;
             }
         }
@@ -746,17 +737,6 @@ namespace F002520
         #endregion
 
 
-
-
-
-
-
-
-
-
-
-
-
         #endregion
 
         #region Private
@@ -851,8 +831,6 @@ namespace F002520
             m_strModel = "";
             
 
-
-
         }
 
         private bool ReadOptionFile(ref string strErrorMessage)
@@ -888,7 +866,7 @@ namespace F002520
                 m_stOptionData.AutoChangeOver = objOptionFile.ReadString("AutoChangeOver", "Enable");
                 if ((m_stOptionData.AutoChangeOver != "0") && (m_stOptionData.AutoChangeOver != "1"))
                 {
-                    strErrorMessage = "Invalid AutoChangeOver Enable Value: " + m_stOptionData.AutoChangeOver;
+                    strErrorMessage = "Invalid AutoChangeOver Enable: " + m_stOptionData.AutoChangeOver;
                     return false;
                 }
 
@@ -906,52 +884,73 @@ namespace F002520
                 m_stOptionData.MES_Enable = objOptionFile.ReadString("MES", "Enable");
                 if ((m_stOptionData.MES_Enable != "0") && (m_stOptionData.MES_Enable != "1"))
                 {
-                    strErrorMessage = "Invalid MES_Enable Value: " + m_stOptionData.MES_Enable;
+                    strErrorMessage = "Invalid MES_Enable: " + m_stOptionData.MES_Enable;
                     return false;
                 }
 
                 m_stOptionData.MES_Station = objOptionFile.ReadString("MES", "Station");
                 if (m_stOptionData.MES_Enable == "1" && string.IsNullOrWhiteSpace(m_stOptionData.MES_Station))
                 {
-                    strErrorMessage = "Invalid MES Station Value: " + m_stOptionData.MES_Station;
+                    strErrorMessage = "Invalid MES_Station: " + m_stOptionData.MES_Station;
                     return false;
                 }
 
                 #endregion
 
-                #region SW Version Control
+                #region MDCS
 
-                //m_stOptionData.SWVersionControl = objOptionFile.ReadString("SoftwareVersionControl", "Enable");
-                //if ((m_stOptionData.SWVersionControl != "0") && (m_stOptionData.SWVersionControl != "1"))
+                //m_stOptionData.MDCSEnable = objOptionFile.ReadString("MDCS", "Enable");
+                //if ((m_stOptionData.MDCSEnable != "0") && (m_stOptionData.MDCSEnable != "1"))
                 //{
-                //    strErrorMessage = "Invalid SWVersionControl Value: " + m_stOptionData.SWVersionControl;
+                //    strErrorMessage = "Invalid MDCS_Enable:" + m_stOptionData.MDCSEnable;
+                //    return false;
+                //}
+
+                //m_stOptionData.MDCSURL = objOptionFile.ReadString("MDCS", "URL");
+                //if (string.IsNullOrWhiteSpace(m_stOptionData.MDCSURL))
+                //{
+                //    strErrorMessage = "Invalid MDCS_URL:" + m_stOptionData.MDCSURL;
+                //    return false;
+                //}
+
+                //m_stOptionData.MDCSDeviceName = objOptionFile.ReadString("MDCS", "DeviceName");
+                //if (string.IsNullOrWhiteSpace(m_stOptionData.MDCSDeviceName))
+                //{
+                //    strErrorMessage = "Invalid MDCS DeviceName:" + m_stOptionData.MDCSDeviceName;
+                //    return false;
+                //}
+
+                //m_stOptionData.PreStationResultCheck = objOptionFile.ReadString("MDCS", "PreStationResultCheck");
+                //if ((m_stOptionData.PreStationResultCheck != "0") && (m_stOptionData.PreStationResultCheck != "1"))
+                //{
+                //    strErrorMessage = "Invalid MDCS PreStationResultCheck:" + m_stOptionData.PreStationResultCheck;
+                //    return false;
+                //}
+
+                //m_stOptionData.PreStationDeviceName = objOptionFile.ReadString("MDCS", "PreStationDeviceName");
+                //if (string.IsNullOrWhiteSpace(m_stOptionData.PreStationDeviceName))
+                //{
+                //    strErrorMessage = "Invalid MDCS PreStationDeviceName:" + m_stOptionData.PreStationDeviceName;
+                //    return false;
+                //}
+
+                //m_stOptionData.PreStationVarName = objOptionFile.ReadString("MDCS", "PreStationVarName");
+                //if (string.IsNullOrWhiteSpace(m_stOptionData.PreStationVarName))
+                //{
+                //    strErrorMessage = "Invalid MDCS PreStationVarName:" + m_stOptionData.PreStationVarName;
+                //    return false;
+                //}
+
+                //m_stOptionData.PreStationVarValue = objOptionFile.ReadString("MDCS", "PreStationVarValue");
+                //if (string.IsNullOrWhiteSpace(m_stOptionData.PreStationVarValue))
+                //{
+                //    strErrorMessage = "Invalid MDCS PreStationVarValue:" + m_stOptionData.PreStationVarValue;
                 //    return false;
                 //}
 
                 #endregion
 
                 #region XML
-
-                // TestItem
-                //m_stOptionData.TestItemXMLFile = objOptionFile.ReadString("XML", "TestItem");
-                //if (   (m_stOptionData.TestItemXMLFile.Contains("CT40") == false)
-                //    && (m_stOptionData.TestItemXMLFile.Contains("CT45") == false)
-                //    && (m_stOptionData.TestItemXMLFile.Contains("CT47") == false)
-                //    && (m_stOptionData.TestItemXMLFile.Contains("CW45") == false) )
-                //{
-                //    strErrorMessage = "Invalid TestItemXMLFile Name: " + m_stOptionData.TestItemXMLFile;
-                //    return false;
-                //}
-                //m_strTestItemXMLFile = m_stOptionData.TestItemXMLFile;
-
-                // Get Model
-                //int index = m_stOptionData.TestItemXMLFile.IndexOf("_");
-                //m_strModel = m_stOptionData.TestItemXMLFile.Substring(0, index).Trim().ToUpper();
-                //if ((m_strModel != "CT40") && (m_strModel != "CT45") && (m_strModel != "CT47") && (m_strModel != "CW45"))
-                //{
-                //    strErrorMessage = "Invalid Model Value, Please Check TestItem XML File Name: " + m_stOptionData.TestItemXMLFile;
-                //    return false;
-                //}
 
                 // Equipment
                 m_stOptionData.EquipmentXMLFile = objOptionFile.ReadString("XML", "EquipmentConfig");
@@ -978,19 +977,19 @@ namespace F002520
             try
             { 
                 m_TestItemList.Clear();
-                foreach(string key in m_objXmlConfig.dicTestItemList.Keys)
-                {    
-                    if (m_objXmlConfig.dicTestItemList[key] == true)
+         
+                foreach (string key in clsConfigHelper.dicTestItemList.Keys)
+                {
+                    if (clsConfigHelper.dicTestItemList[key] == true)
                     {
-                        if (key == "TestAutoChangeOver" && m_stOptionData.AutoChangeOver == "0")
+                        // Option.ini文件中的AutoChangeOver选项可以直接控制，不用同时配置XML中为false.
+                        if (key == "TestAutoChangeOver" && m_stOptionData.AutoChangeOver == "0") 
                         {
                             continue;
                         }
 
                         m_TestItemList.Add(key);
                     }
-
-
                 }
             }
             catch(Exception ex)
@@ -1012,8 +1011,8 @@ namespace F002520
 
                 this.lblTestResult.Visible = false;
                 this.lblTestItem.Text = "Init Run ...";
-                this.lblTestItem.BackColor = Color.YellowGreen;
-                this.radioButProduction.Checked = true;
+                this.lblTestItem.BackColor = Color.DarkGray;
+                this.radioBtnProduction.Checked = true;
                 this.rtbTestLog.Clear();
 
                 #endregion
@@ -1078,7 +1077,7 @@ namespace F002520
                         strErrorMessage = "Failed to select production line.";
                         return false;
                     }
-                    DisplayMessage("Production Line: " + m_strModel);
+                    DisplayMessage("Select Production Line: " + m_strModel);
                 }
 
                 #endregion
@@ -1119,7 +1118,6 @@ namespace F002520
                     strErrorMessage = "Equipment XML File not Exist: " + m_strEquipmentXMLFile;
                     return false;
                 }
-
                 if (clsEquipmentInitial.LoadEquipment(ref strErrorMessage) == false)
                 {
                     strErrorMessage = "Failed to Load Equipment XML File: " + strErrorMessage;
@@ -1132,11 +1130,21 @@ namespace F002520
 
                 #region Load TestItem XML File
 
-                DisplayMessage("Load TestItem XML File.");
-                m_strTestItemXMLFile = string.Format("{0}_SensorK_TestItem.xml", m_strModel);   // TestItem XML File Name
-                DisplayMessage("FileName: " + m_strTestItemXMLFile); 
-                m_strTestItemXMLFile = Application.StartupPath + @"\TestConfig\TestItem\" + m_strModel + "\\" + m_strTestItemXMLFile;
+                string Model = "";
+                if (m_strModel.Length > 4)
+                {
+                    Model = m_strModel.Substring(0, 4);
+                }
+                else
+                {
+                    Model = m_strModel;
+                }
 
+                DisplayMessage("Load TestItem XML File.");
+                m_strTestItemXMLFile = string.Format("{0}_SensorK_TestItem.xml", Model);   // TestItem XML File Name
+                DisplayMessage("FileName: " + m_strTestItemXMLFile);
+
+                m_strTestItemXMLFile = Application.StartupPath + @"\TestConfig\TestItem\" + Model + "\\" + m_strTestItemXMLFile;
                 if (File.Exists(m_strTestItemXMLFile) == false)
                 {
                     strErrorMessage = "TestItem XML File not Exist: " + m_strTestItemXMLFile;
@@ -1157,11 +1165,20 @@ namespace F002520
                     return false;
                 }
 
+                // TestConfig Param
+                if (LoadTestConfig(frmMain.m_strTestItemXMLFile, ref strErrorMessage) == false)
+                {
+                    strErrorMessage = "Load TestConfig Param fail." + strErrorMessage;
+                    return false;
+                }
+
                 DisplayMessage("Load TestItem XML File Success.");
 
                 #endregion
 
                 #region Init Hardware
+
+                DisplayMessage("Init HW ...");
 
                 if (InitHW(ref strErrorMessage) == false)
                 {
@@ -1169,18 +1186,22 @@ namespace F002520
                     return false;
                 }
 
+                DisplayMessage("Init All HW Completed");
+
                 #endregion
 
                 #region Init PLC
 
                 if (m_stOptionData.TestMode == "1")
                 {
+                    DisplayMessage("Auto TestMode, Init PLC ...");
                     if (InitPLC(ref strErrorMessage) == false)
                     {
                         return false;
                     }
 
                     // Start Timer
+                    DisplayMessage("Start Timer.");
                     PLCWatchDog = new System.Threading.Timer(Thread_Timer_PLC_WatchDog, null, 1000, 1000);
                     PLCTimer = new System.Threading.Timer(Thread_Timer_PLC, null, 1000, 1000);
                 }
@@ -1198,6 +1219,9 @@ namespace F002520
 
         private void RunStart()
         {
+            string strErrorMessage = "";
+            isTestRunning = true;
+
             try
             {
                 InitButtons(false);
@@ -1210,12 +1234,12 @@ namespace F002520
             }
             catch (Exception ex)
             {
-                string strErrorMessage = "RunStart Exception: " + ex.Message;
+                strErrorMessage = "RunStart Exception: " + ex.Message;
                 return;
             }
             finally
             {
-                isTestRun = true;     
+                isTestRunning = false;     
                 clsUtil.Dly(1.0);
             }
         }
@@ -1223,43 +1247,42 @@ namespace F002520
         private bool RunTest()
         {
             string strErrorMessage = "";
-            bool bRes = false;
-            //bool bFlag = false;           
+
+            bool bRes = false;     
+            bool bFlag = false;    
             long lStartTime = 0;
-            double dTestTotalTime = 0;
-            //string strTestItem = "";
 
-            m_bRunning = true;
-            this.rtbTestLog.Clear();
+            //double dTestTotalTime = 0;
+            //m_bRunning = true;
 
-            #region Init Log
+            #region Init
 
             // 当获得到SN后，才开始初始化本产品的log
-            if (InitLog4net() == false)
-            {
-                DisplayMessage("Init Log4net Fail.");
-                return false;
-            }
+            //if (InitLog4net() == false)
+            //{
+            //    DisplayMessage("Init Log4net Fail.");
+            //    return false;
+            //}
+
+            ClearTestLog();
 
             #endregion
 
             #region Init Variable
 
             InitMDCSVariable();
-            InitUnitDeviceInfo();
            
-
             #endregion
 
             WriteTestReportHeader();
             lStartTime = clsUtil.StartTimeInTicks(); 
-            m_stTestSaveData.TestResult.TestPassed = false;
-  
+     
             try
             {           
+
                 InitTestItemList(ref strErrorMessage);
 
-                #region Test
+                #region TestItem
 
                 bRes = RunTestItem();
 
@@ -1268,14 +1291,51 @@ namespace F002520
                 #region TestEnd
 
 
+
                 #endregion
 
                 #region Save Data
 
+                // MDCS
+                string MDCS_Enable = GetTestConfig("MDCS", "Enable").ToUpper();           
+                if (MDCS_Enable == "TRUE")
+                {
+                    clsCommonFunction.DeleteMDCSSqueueXmlFile();
+
+                    DisplayMessage("Upload to MDCS ...");  
+                    if (SaveDataToMDCS(ref strErrorMessage) == false)
+                    {
+                        DisplayMessage("Fail to Save MDCS Data." + strErrorMessage, "ERROR");
+                        return false;
+                    }
+
+                    DisplayMessage("Upload to MDCS Successful.");
+                }
+                else
+                {
+                    DisplayMessage("Skip to Upload MDCS.");
+                }
             
+                // MES
+                if (m_bMESEnable == true)
+                {
+                    DisplayMessage("Upload to MES ...");
+                    if (UploadToMES(ref strErrorMessage) == false)
+                    {
+                        DisplayMessage("Fail to Upload MES Data." + strErrorMessage, "ERROR");
+                        return false;
+                    }
+
+                    DisplayMessage("Upload to MES Successful.");
+                }
+                else
+                {
+                    DisplayMessage("Skip to Upload MES.");
+                }
 
                 #endregion
 
+            
                 WriteTestReportBooter();
                 m_stTestSaveData.TestRecord.TestTotalTime = clsUtil.ElapseTimeInSeconds(lStartTime).ToString("F1");
                 DisplayMessage("Total TestTime: " + m_stTestSaveData.TestRecord.TestTotalTime + "s");
@@ -1283,11 +1343,23 @@ namespace F002520
             catch(Exception ex)
             {
                 strErrorMessage = "RunTest Exception:" + ex.Message;
+
+
+
                 return false;
             }
             finally
             {
-                
+
+
+
+                #region Show Result
+
+
+                #endregion
+
+                // End unit log file
+
             }
 
             return true;  
@@ -1297,9 +1369,9 @@ namespace F002520
         {
             string strErrorMessage = "";
             string strTestItem = "";
+            bool bFailFlag = false;
             bool bRes = false;
-            //bool bFlag = false;           
-       
+              
             if (m_TestItemList.Count() < 1)
             {
                 strErrorMessage = "TestItem List is Empty !!!";
@@ -1311,11 +1383,24 @@ namespace F002520
             try
             {
                 for (int i = 0; i < m_TestItemList.Count(); i++)
-                {            
+                {
+                    bFailFlag = false;
                     // Init MDCS Data
                     m_stTestSaveData.TestResult.TestStatus = "1";
                     m_stTestSaveData.TestResult.TestFailCode = 0;
                     m_stTestSaveData.TestResult.TestFailMessage = "";
+
+                    #region User Stop
+
+                    if (m_bStop == true)
+                    {
+                        bFailFlag = true;
+                        strErrorMessage = "User Stop Test !!!";
+                        DisplayMessage(strErrorMessage);
+                        break;
+                    }
+
+                    #endregion
 
                     strTestItem = m_TestItemList[i]; 
                     ShowTestItem(strTestItem);
@@ -1325,13 +1410,14 @@ namespace F002520
                     var MethodInfo = typeof(clsSensorKBase).GetMethod(strTestItem);
                     if (MethodInfo == null)
                     {
+                        bFailFlag = true;
                         DisplayMessage("Failed to Function Reflection: " + strTestItem);
                         m_stTestSaveData.TestResult.TestPassed = false;
                     }
                     else
                     {
                         bRes = false;
-                        bRes = (bool)MethodInfo.Invoke(sensorKTest, null);
+                        bRes = (bool)MethodInfo.Invoke(sensorKTest, null);  // Call TestMethod
                         if (bRes == true)
                         {
                             m_stTestSaveData.TestResult.TestPassed = true;
@@ -1339,17 +1425,22 @@ namespace F002520
                         }
                         else
                         {
+                            bFailFlag = true;
                             m_stTestSaveData.TestResult.TestPassed = false;
                             DisplayMessage("SubtestIterate FAIL.");
+                            break;
                         }
 
                         MethodInfo = null;
                     }
 
-                    DisplayMessage("Completed" + "\r\n");
+                    DisplayMessage("Completed !!!" + "\r\n");
                     System.Threading.Thread.Sleep(50);
                     Application.DoEvents();
                 }
+
+
+
                 
             }
             catch(Exception ex)
@@ -1373,20 +1464,24 @@ namespace F002520
                 {
                     if (clsConfigHelper.Daq.DeviceType == "NI")
                     {
+                        DisplayMessage("Init NI DAQ.");
                         if (m_objEquipmentInitial.InitNIDAQ(clsConfigHelper.Daq.DeviceName) == false)
                         {
                             strErrorMessage = "Init NI DAQ Fail !!!";
                             return false;
                         }  
+
                     }
                     else if (clsConfigHelper.Daq.DeviceType == "JY-DAM")
                     {
+                        DisplayMessage("Init JY-DAM DAQ.");
                         if (m_objEquipmentInitial.InitJYDAMDAQ() == false)
                         {
                             strErrorMessage = "Init JY-DAM DAQ Fail !!!";
                             return false;
                         }  
                     }
+                    DisplayMessage("Init DAQ Completed.");
                 }
 
                 // MOTOR
@@ -1394,6 +1489,7 @@ namespace F002520
                 {
                     if (clsConfigHelper.servoMotor.DeviceType == "OMORN")
                     {
+                        DisplayMessage("Init OMORN Motor.");
                         if (m_objEquipmentInitial.InitOMORNMotor(ref strErrorMessage) == false)
                         {
                             strErrorMessage = "Init OMORN Motor Fail !!!" + strErrorMessage;
@@ -1402,12 +1498,14 @@ namespace F002520
                     }
                     else if (clsConfigHelper.servoMotor.DeviceType == "PANASONIC")
                     {
+                        DisplayMessage("Init PANASONIC Motor.");
                         if (m_objEquipmentInitial.InitPANASONICMotor() == false)
                         {
                             strErrorMessage = "Init Panasonic Motor Fail !!!";
                             return false;
                         }
                     }
+                    DisplayMessage("Init Motor Completed.");
                 }
        
                 m_bRunInitialized = true;
@@ -1415,6 +1513,41 @@ namespace F002520
             catch(Exception ex)
             {
                 strErrorMessage = "InitHW Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ReleaseHW(ref string strErrorMessage)
+        {
+            try
+            {
+                if (clsConfigHelper.Daq.Enable == true)
+                {
+                    if (clsConfigHelper.Daq.DeviceType == "NI")
+                    {
+                        if (m_objEquipmentInitial.m_objNIDAQ != null)
+                        {
+                            m_objEquipmentInitial.m_objNIDAQ.Reset();
+                            m_objEquipmentInitial.m_objNIDAQ = null;
+                        }
+                    }
+                }
+
+                if (clsConfigHelper.servoMotor.Enable == true)
+                {
+                    if (m_objEquipmentInitial.m_objOMORN != null)
+                    {
+                        m_objEquipmentInitial.m_objOMORN.PortClose(ref strErrorMessage);
+                    }     
+                }
+            
+            
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "ReleaseHW Exception:" + ex.Message;
                 return false;
             }
 
@@ -1446,7 +1579,7 @@ namespace F002520
             try
             {
                 string strSN = "";
-                string strDate = DateTime.Now.ToString("yyyy-MM-dd_hh-mm-ss");
+                string strDate = DateTime.Now.ToString("yyyyMMdd_hhmmss");
                 string logFileName = string.Format("Debug_{0}_{1}.log", strSN, strDate);
                 string folder = Application.StartupPath + @"\log\" + DateTime.Now.ToString("yyyy-MM-dd") + "\\"; ;
                
@@ -1499,31 +1632,26 @@ namespace F002520
             return true;
         }
 
-        private void InitUnitDeviceInfo()
-        {
-            //m_stUnitDeviceInfo.SN = "";
-            //m_stUnitDeviceInfo.SKU = "";
-            //m_stUnitDeviceInfo.Model = "";
-            //m_stUnitDeviceInfo.IMEI = "";
-            //m_stUnitDeviceInfo.MEID = "";
-            //m_stUnitDeviceInfo.IMEI2 = "";
-            //m_stUnitDeviceInfo.MEID2 = "";
-            //m_stUnitDeviceInfo.Vendor = "";
-            //m_stUnitDeviceInfo.HWVersion = "";
-            //m_stUnitDeviceInfo.AndroidOS = "";
-            //m_stUnitDeviceInfo.AudioPAName = "";
-            //m_stUnitDeviceInfo.ConfigNumber = "";
-            //m_stUnitDeviceInfo.EID = "";
-            //m_stUnitDeviceInfo.WorkOrder = "";
-        }
-
         private void InitMDCSVariable()
         {
+            // TestResult
+            m_stTestSaveData.TestResult.TestPassed = false;
+            m_stTestSaveData.TestResult.TestFailCode = 0;
+            m_stTestSaveData.TestResult.TestFailMessage = "";
+            m_stTestSaveData.TestResult.TestStatus = "";
+
+            // TestRecord
             m_stTestSaveData.TestRecord.ToolNumber = Program.g_strToolNumber;
             m_stTestSaveData.TestRecord.ToolRev = Program.g_strToolRev;
             m_stTestSaveData.TestRecord.SKU = "";
             m_stTestSaveData.TestRecord.Model = "";
             m_stTestSaveData.TestRecord.SN = "";
+            m_stTestSaveData.TestRecord.IMEI = "";
+            m_stTestSaveData.TestRecord.MEID = "";
+            m_stTestSaveData.TestRecord.IMEI2 = "";
+            m_stTestSaveData.TestRecord.MEID2 = "";
+            m_stTestSaveData.TestRecord.EID = "";
+            m_stTestSaveData.TestRecord.WorkOrder = "";
             m_stTestSaveData.TestRecord.PCBAVendor = "";
             m_stTestSaveData.TestRecord.HWVersion = "";
             m_stTestSaveData.TestRecord.AndroidOSVersion = "";
@@ -1532,7 +1660,7 @@ namespace F002520
             m_stTestSaveData.TestRecord.BarometerOffsetValue = "0";
             m_stTestSaveData.TestRecord.SoftwareVersionControl = "";
 
-            // Result
+            // TestItem Result
             m_stTestSaveData.TestRecord.TestGSensorCalibration = "NA";
             m_stTestSaveData.TestRecord.TestGYROSensorCalibration = "NA";
             m_stTestSaveData.TestRecord.TestPSensorCalibration = "NA";
@@ -1568,9 +1696,10 @@ namespace F002520
             string startDate, startTime;
             startDate = System.DateTime.Now.ToString("yyyy-MM-dd");
             startTime = System.DateTime.Now.ToString("HH:mm:ss");
-            DisplayMessage("***********************  Start ***********************");    
+            DisplayMessage("****************************************************************");  
+            DisplayMessage("****************************  Start ****************************");
+            DisplayMessage("****************************************************************");  
             DisplayMessage("Timestamp: " + startDate + " " + startTime);
-   
             return;
         }
 
@@ -1580,13 +1709,192 @@ namespace F002520
             endDate = System.DateTime.Now.ToString("yyyy-MM-dd");
             endTime = System.DateTime.Now.ToString("HH:mm:ss");
             DisplayMessage("EndTime : " + endDate + " " + endTime);
-            DisplayMessage("***********************  End  ***********************");
-      
+            DisplayMessage("****************************************************************");  
+            DisplayMessage("****************************  End  *****************************");
+            DisplayMessage("****************************************************************");  
             return;
         }
 
-        #endregion
+        private bool SaveDataToMDCS(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bRes = false;
+            bool bFlag = false; 
+            string MDCSDeviceName = "";
 
+            string strURL = GetTestConfig("MDCS", "URL");
+            string strDeviceName = GetTestConfig("MDCS", "DeviceName");
+            if (strDeviceName.IndexOf(Program.g_strToolNumber, StringComparison.OrdinalIgnoreCase) == -1)
+            {
+                strErrorMessage = "Invalid MDCS Device Name !!!";
+                return false;
+            }
+           
+            try
+            {
+                #region Confirm Device Name
+
+                string[] DeviceNameList = strDeviceName.Split(new char[] {'|'}, StringSplitOptions.RemoveEmptyEntries);
+                if (DeviceNameList.Length > 1) // Multi-DeviceName
+                {        
+                    for (int i = 0; i < DeviceNameList.Length; i++)
+                    {               
+                        string deviceName = DeviceNameList[i].Trim();
+                        //string pattern = @"\b" + m_strModel + @"\b(?!.*\b" + m_strModel + @"\b)";
+                        string pattern = string.Format("^(?!.*{0}.*$).*$", Regex.Escape(m_strModel));
+
+                        bool isMatch = Regex.IsMatch(deviceName, pattern);             
+                        if (isMatch)
+                        {
+                            MDCSDeviceName = deviceName;
+                            bFlag = true;
+                            break;             
+                        }
+                        else
+                        {
+                            strErrorMessage = "The DeviceName is Not Match model!, DeviceName: " + deviceName;
+                            bFlag = false;
+                            continue;
+                        }
+                    }
+                    if (bFlag == false)
+                    {
+                        strErrorMessage = "Can't find Matched Device Name, " + strErrorMessage;
+                        return false;
+                    }
+                }
+                else  // Only One Line
+                {
+                    string pattern = string.Format("^(?!.*{0}.*$).*$", Regex.Escape(m_strModel));
+                    bool isMatch = Regex.IsMatch(strDeviceName, pattern);   
+                    if (isMatch)
+                    {
+                        MDCSDeviceName = strDeviceName;
+                    }
+                    else
+                    {
+                        strErrorMessage = "The Device Name is Not Matched With Model !!!";
+                        return false;
+                    } 
+                }
+
+                DisplayMessage("Device Name: " + MDCSDeviceName);
+
+                #endregion
+
+                #region Send MDCS
+
+                clsMDCS obj_SaveMDCS = new clsMDCS();
+                obj_SaveMDCS.ServerName = strURL;
+                obj_SaveMDCS.DeviceName = MDCSDeviceName;
+                Invoke((Action)delegate()
+                {
+                    obj_SaveMDCS.UseModeProduction = this.radioBtnProduction.Checked;
+                });
+                obj_SaveMDCS.p_TestData = m_stTestSaveData;
+
+                DisplayMessage("Send MDCS Data ......");
+
+                for (int i = 0; i < 3; i++)
+                {
+                    bRes = obj_SaveMDCS.SendMDCSData(ref strErrorMessage);
+                    if (bRes == false)
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    strErrorMessage = "Fail to Send MDCS Data !!!";
+                    return false;
+                }
+
+                #endregion
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool UploadToMES(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bFlag = false;
+            bool bUploadMES = false;
+            bool bPassFailFlag = false;
+            string strStation = "";
+            string strEID = m_stTestSaveData.TestRecord.EID;     
+            string strWorkOrder = m_stTestSaveData.TestRecord.WorkOrder;
+            string strSN = m_stTestSaveData.TestRecord.SN;
+
+            try
+            {
+                #region MES Station
+
+                strStation = GetTestConfig("MES", "Station");
+                if (string.IsNullOrWhiteSpace(strStation))
+                {
+                    strErrorMessage = "Fail to get MES Station Name value !";
+                    return false;
+                }
+
+                #endregion
+
+                #region Upload MES
+
+                if (m_stTestSaveData.TestResult.TestPassed == true)
+                {
+                    bPassFailFlag = true;
+                }
+                else
+                {
+                    bPassFailFlag = false;
+                }
+
+                for (int i = 0; i < 3; i++)
+                {
+                    bUploadMES = clsUploadMES.MESUploadData(strEID, strStation, strWorkOrder, strSN, bPassFailFlag, ref strErrorMessage);
+                    if (bUploadMES == false)
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    strErrorMessage = "Fail to Upload MES Data !!!";
+                    return false;
+                }
+
+                #endregion
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion
 
         #region Load XML
 
@@ -1596,7 +1904,7 @@ namespace F002520
 
             try
             {
-                if (m_objXmlConfig.LoadTestItemList(strFilePath, ref strErrorMessage) == false)
+                if (clsConfigHelper.LoadTestItemList(strFilePath, ref strErrorMessage) == false)
                 {
                     return false;
                 }  
@@ -1616,7 +1924,7 @@ namespace F002520
 
             try
             {
-                if (m_objXmlConfig.LoadTestItemParameter(strFilePath, ref strErrorMessage) == false)
+                if (clsConfigHelper.LoadTestItemParameter(strFilePath, ref strErrorMessage) == false)
                 {
                     return false;
                 }
@@ -1630,13 +1938,13 @@ namespace F002520
             return true;
         }
 
-        private bool LoadTestConfig(string strFilePath, string strErrorMessage)
+        private bool LoadTestConfig(string strFilePath, ref string strErrorMessage)
         {
             strErrorMessage = "";
 
             try
             {
-                if (m_objXmlConfig.LoadTestConfig(strFilePath, ref strErrorMessage) == false)
+                if (clsConfigHelper.LoadTestConfig(strFilePath, ref strErrorMessage) == false)
                 {
                     return false;
                 }
@@ -1661,7 +1969,7 @@ namespace F002520
                     return string.Empty;
                 }
 
-                strValue = m_objXmlConfig.dicTestItemParamList[strItem][strName].ToString().Trim();
+                strValue = clsConfigHelper.dicTestItemParamList[strItem][strName].ToString(); //.Trim();
 
                 if (string.IsNullOrWhiteSpace(strValue))
                 {
@@ -1687,8 +1995,8 @@ namespace F002520
                 {
                     return string.Empty;
                 }
-
-                strValue = m_objXmlConfig.dicTestConfig[strItem][strName].ToString();
+ 
+                strValue = clsConfigHelper.dicTestConfig[strItem][strName].ToString().Trim();
 
                 if (string.IsNullOrWhiteSpace(strValue))
                 {
@@ -1703,6 +2011,8 @@ namespace F002520
 
             return strValue;
         }
+
+     
 
         #endregion
 
@@ -1723,13 +2033,13 @@ namespace F002520
                     lblTestItem.Invoke(new Action(delegate
                     {
 
-                        lblTestItem.ForeColor = Color.Red;
+                        lblTestItem.ForeColor = Color.Black;
                         lblTestItem.Text = str_TestItem;
                     }));
                 }
                 else
                 {
-                    lblTestItem.ForeColor = Color.Red;
+                    lblTestItem.ForeColor = Color.Black;
                     lblTestItem.Text = str_TestItem;
                 }
             }
@@ -1894,19 +2204,19 @@ namespace F002520
         {
             Invoke((Action) delegate()
             {
-                this.radioButProduction.Checked = true;
+                this.radioBtnProduction.Checked = true;
                 this.lblProject.Text = m_strModel;
                 this.lblTestItem.Text = "Init Completed !";
 
                 if (m_stOptionData.TestMode == "1")
                 {
-                    this.radiobutAuto.Checked = true;
+                    this.radiobtnAuto.Checked = true;
                     this.btnStart.Visible = false;
                     this.btnStop.Visible = false;
                 }
                 else
                 {
-                    this.radiobutManual.Checked = true;
+                    this.radiobtnManual.Checked = true;
                     this.btnStart.Visible = true;
                     this.btnStop.Visible = true;
                 }          

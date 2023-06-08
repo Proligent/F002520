@@ -35,7 +35,6 @@ namespace F002520
             m_obj_MDCSDevice.TestType = m_str_TestType;
 
             m_b_ModeProduction = true;
-
             m_obj_Data = new TestSaveData();
         }
 
@@ -283,7 +282,46 @@ namespace F002520
                 m_obj_MDCSDevice.AddStringVariable("SN", m_obj_Data.TestRecord.SN);
                 m_obj_MDCSDevice.AddStringVariable("Model", m_obj_Data.TestRecord.Model);
                 m_obj_MDCSDevice.AddStringVariable("SKU", m_obj_Data.TestRecord.SKU);
-                m_obj_MDCSDevice.AddStringVariable("OSVersion", m_obj_Data.TestRecord.AndroidOSVersion);
+                m_obj_MDCSDevice.AddStringVariable("IMEI", m_obj_Data.TestRecord.IMEI);
+                m_obj_MDCSDevice.AddStringVariable("MEID", m_obj_Data.TestRecord.MEID);
+                m_obj_MDCSDevice.AddStringVariable("IMEI2", m_obj_Data.TestRecord.IMEI2);
+                m_obj_MDCSDevice.AddStringVariable("MEID2", m_obj_Data.TestRecord.MEID2);
+                m_obj_MDCSDevice.AddStringVariable("EID", m_obj_Data.TestRecord.EID);
+                m_obj_MDCSDevice.AddStringVariable("WorkOrder", m_obj_Data.TestRecord.WorkOrder);
+                m_obj_MDCSDevice.AddStringVariable("Vendor", m_obj_Data.TestRecord.PCBAVendor);
+                m_obj_MDCSDevice.AddStringVariable("HWVersion", m_obj_Data.TestRecord.HWVersion);
+                m_obj_MDCSDevice.AddStringVariable("ConfigNumber", m_obj_Data.TestRecord.ConfigurationNumber);
+                m_obj_MDCSDevice.AddStringVariable("AudioPAName", m_obj_Data.TestRecord.AudioPAName);
+                m_obj_MDCSDevice.AddStringVariable("BarometerOffsetValue", m_obj_Data.TestRecord.BarometerOffsetValue);
+                m_obj_MDCSDevice.AddStringVariable("SoftwareVersionControl", m_obj_Data.TestRecord.SoftwareVersionControl);
+                m_obj_MDCSDevice.AddStringVariable("AndroidOS", m_obj_Data.TestRecord.AndroidOSVersion);
+
+                // TestItem Result
+                m_obj_MDCSDevice.AddStringVariable("GSensorCalibration", m_obj_Data.TestRecord.TestGSensorCalibration);
+                m_obj_MDCSDevice.AddStringVariable("GYROSensorCalibration", m_obj_Data.TestRecord.TestGYROSensorCalibration);
+                m_obj_MDCSDevice.AddStringVariable("PSensorCalibration", m_obj_Data.TestRecord.TestPSensorCalibration);
+                m_obj_MDCSDevice.AddStringVariable("PSensorFunction", m_obj_Data.TestRecord.TestPSensorFunction);
+                m_obj_MDCSDevice.AddStringVariable("AudioCalibration", m_obj_Data.TestRecord.TestAudioCalibration);
+                m_obj_MDCSDevice.AddStringVariable("BarometerCalibration", m_obj_Data.TestRecord.TestBarometerCalibration);
+              
+                // MDB Value
+                m_obj_MDCSDevice.AddStringVariable("ACCEL_ZERO_OFFSET_AFTER", m_obj_Data.TestRecord.ACCEL_ZERO_OFFSET_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("ACCEL_ZERO_OFFSET_BEFORE", m_obj_Data.TestRecord.ACCEL_ZERO_OFFSET_BEFORE);
+                m_obj_MDCSDevice.AddStringVariable("ACCELEROMETER_CALIBRATION_AFTER", m_obj_Data.TestRecord.ACCELEROMETER_CALIBRATION_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("ACCELEROMETER_CALIBRATION_BEFORE", m_obj_Data.TestRecord.ACCELEROMETER_CALIBRATION_BEFORE);
+                m_obj_MDCSDevice.AddStringVariable("GYRO_ZERO_OFFSET_AFTER", m_obj_Data.TestRecord.GYRO_ZERO_OFFSET_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("GYRO_ZERO_OFFSET_BEFORE", m_obj_Data.TestRecord.GYRO_ZERO_OFFSET_BEFORE);
+                m_obj_MDCSDevice.AddStringVariable("GYROSCOPE_CALIBRATION_AFTER", m_obj_Data.TestRecord.GYROSCOPE_CALIBRATION_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("GYROSCOPE_CALIBRATION_BEFORE", m_obj_Data.TestRecord.GYROSCOPE_CALIBRATION_BEFORE);
+                m_obj_MDCSDevice.AddStringVariable("PROXIMITY_CALIBRATION_AFTER", m_obj_Data.TestRecord.PROXIMITY_CALIBRATION_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("PROXIMITY_CALIBRATION_BEFORE", m_obj_Data.TestRecord.PROXIMITY_CALIBRATION_BEFORE);
+                m_obj_MDCSDevice.AddStringVariable("PROXIMITY_CALIBRATION_EXTEND_AFT", m_obj_Data.TestRecord.PROXIMITY_CALIBRATION_EXTEND_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("PROXIMITY_CALIBRATION_EXTEND_BEF", m_obj_Data.TestRecord.PROXIMITY_CALIBRATION_EXTEND_BEFORE);
+                m_obj_MDCSDevice.AddStringVariable("MAX98390L_RDC_AFTER", m_obj_Data.TestRecord.MAX98390L_RDC_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("MAX98390L_RDC_BEFORE", m_obj_Data.TestRecord.MAX98390L_RDC_BEFORE);
+                m_obj_MDCSDevice.AddStringVariable("MAX98390L_TROOM_AFTER", m_obj_Data.TestRecord.MAX98390L_TROOM_AFTER);
+                m_obj_MDCSDevice.AddStringVariable("MAX98390L_TROOM_BEFORE", m_obj_Data.TestRecord.MAX98390L_TROOM_BEFORE);
+
                 // Numeric Variable
                 m_obj_MDCSDevice.AddNumericVariable("TestTotalTime", m_obj_Data.TestRecord.TestTotalTime);
 

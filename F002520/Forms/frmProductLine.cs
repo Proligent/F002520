@@ -53,7 +53,7 @@ namespace F002520
         {
             this.DialogResult = DialogResult.No;
 
-            m_sProductLine = this.comboxPdLine.Text;
+            m_sProductLine = this.comboxPdLine.Text.ToUpper();
             if (string.IsNullOrWhiteSpace(m_sProductLine))
             {
                 return;

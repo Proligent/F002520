@@ -19,9 +19,9 @@ namespace F002520
         public static PLC plcConfig = new PLC();
 
         // Store TestItem Param
-        public Dictionary<string, bool> dicTestItemList = new Dictionary<string, bool>();   // TestItem Enable Param
-        public Dictionary<string, Dictionary<string, string>> dicTestItemParamList = new Dictionary<string, Dictionary<string, string>>();  // TestItemList Param
-        public Dictionary<string, Dictionary<string, string>> dicTestConfig = new Dictionary<string, Dictionary<string, string>>(); // Config Param
+        public static Dictionary<string, bool> dicTestItemList = new Dictionary<string, bool>();   // TestItem Enable Param
+        public static Dictionary<string, Dictionary<string, string>> dicTestItemParamList = new Dictionary<string, Dictionary<string, string>>();  // TestItemList Param
+        public static Dictionary<string, Dictionary<string, string>> dicTestConfig = new Dictionary<string, Dictionary<string, string>>(); // Config Param
 
         #endregion
 
@@ -29,7 +29,6 @@ namespace F002520
 
         public clsConfigHelper()
         {
-    
         }
 
         #endregion
@@ -42,7 +41,7 @@ namespace F002520
         /// <param name="strXmlFile"></param>
         /// <param name="strErrorMessage"></param>
         /// <returns></returns>
-        public bool LoadTestItemList(string strXmlFile, ref string strErrorMessage)
+        public static bool LoadTestItemList(string strXmlFile, ref string strErrorMessage)
         {
             try
             {
@@ -116,7 +115,7 @@ namespace F002520
         /// <param name="strXmlFile"></param>
         /// <param name="strErrorMessage"></param>
         /// <returns></returns>
-        public bool LoadTestItemParameter(string strXmlFile, ref string strErrorMessage)
+        public static bool LoadTestItemParameter(string strXmlFile, ref string strErrorMessage)
         {
             try
             {
@@ -146,7 +145,6 @@ namespace F002520
                 XmlNode root = myXmlDoc.SelectSingleNode("//Configuration/TestItemParameterList");
 
                 // 获取到所有root的子节点
-                Dictionary<string, string> dic_Temp = new Dictionary<string, string>();
                 XmlNodeList nodeList = root.ChildNodes;
 
                 string strItemName = "";
@@ -164,8 +162,10 @@ namespace F002520
                         strErrorMessage = "Invalid Item Name." + strXmlFile;
                         return false;
                     }
-        
+
+                    Dictionary<string, string> dic_Temp = new Dictionary<string, string>();  // must put here !!!
                     dic_Temp.Clear();
+
                     childNodeList = node.ChildNodes;
                     for (int j = 0; j < childNodeList.Count; j++)
                     {
@@ -191,12 +191,12 @@ namespace F002520
         }
 
         /// <summary>
-        /// Load TestConfig Param Under the Configuration node
+        /// Load TestConfig Param Under the Configuration/TestConfig node
         /// </summary>
         /// <param name="strXmlFile"></param>
         /// <param name="strErrorMessage"></param>
         /// <returns></returns>
-        public bool LoadTestConfig(string strXmlFile, ref string strErrorMessage)
+        public static bool LoadTestConfig(string strXmlFile, ref string strErrorMessage)
         {
             try
             {
@@ -211,7 +211,7 @@ namespace F002520
 
                 #endregion
 
-                #region //Configuration/TestItemList
+                #region //Configuration/TestConfig
 
                 // 初始化一个xml实例
                 XmlDocument myXmlDoc = new XmlDocument();
@@ -224,10 +224,12 @@ namespace F002520
                 myXmlDoc.Load(reader);
 
                 // xml root
-                XmlNode root = myXmlDoc.SelectSingleNode("//Configuration");
+                XmlNode root = myXmlDoc.SelectSingleNode("//Configuration/TestConfig");
 
                 // 获取到所有root的子节点
-                Dictionary<string, string> dic_Temp = new Dictionary<string, string>();
+                //Dictionary<string, string> dic_Temp = new Dictionary<string, string>(); 
+                // Classic Error !!! 放在这里的话， 所有 nodeList 共用一个Dictionary, 都是替身, Dictionary 是一个引用 ！！！
+
                 XmlNodeList nodeList = root.ChildNodes;
 
                 string strItemName = "";
@@ -245,8 +247,10 @@ namespace F002520
                         strErrorMessage = "Invalid Item Name." + strXmlFile;
                         return false;
                     }
-   
+
+                    Dictionary<string, string> dic_Temp = new Dictionary<string, string>();
                     dic_Temp.Clear();
+
                     childNodeList = node.ChildNodes;
                     for (int j = 0; j < childNodeList.Count; j++)
                     {

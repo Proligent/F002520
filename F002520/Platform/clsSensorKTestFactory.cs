@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace F002520
 {
     // Simple Factory Design Pattern
+
     public enum ModelID
     {
         CT40,
@@ -16,7 +17,8 @@ namespace F002520
         NULL
     }
 
-    #region Obsolote
+    #region Other Way
+
     //public class clsSensorKTestFactory
     //{
     //    public static clsSensorKBase CreateSensorKTest(string strModel)
@@ -48,6 +50,7 @@ namespace F002520
     //        return objSensorKTest;
     //    }
     //}
+
     #endregion
 
     public class clsSensorKTestFactory
@@ -55,6 +58,7 @@ namespace F002520
         public static clsSensorKBase CreateSensorKTest(ModelID Type)
         {
             clsSensorKBase objSensorKTest = null;
+
             switch (Type)
             {
                 case ModelID.CT40:

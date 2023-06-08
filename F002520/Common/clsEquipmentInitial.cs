@@ -48,6 +48,11 @@ namespace F002520
                 return false;
             }
 
+            if (m_objNIDAQ.Reset() == false)
+            {
+                return false;
+            }
+
             return true;
         }
 
@@ -97,8 +102,7 @@ namespace F002520
                 return false;
             }
 
-            DisplayMessage("Motor Go Back to Home Successfully.");
-
+            DisplayMessage("Motor Go Back to Home Successful.");
             return true;
         }
 

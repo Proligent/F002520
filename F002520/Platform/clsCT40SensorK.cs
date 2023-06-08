@@ -15,78 +15,19 @@ namespace F002520
 
         #region Struct
 
-        private struct ModelOptionData
-        {
-            // ScanSheet
-            public string ScanSheetStation;
-
-            // MODBUS
-            public ComPortSetting ModbusSetting;
-            public string HomePoint;
-
-            // MDCS
-            public string MDCSEnable;
-            public string MDCSMode;
-            public string MDCSURL;
-            public string MDCSDeviceName;
-            public string MDCSPreStationResultCheck;
-            public string MDCSPreStationDeviceName;
-            public string MDCSPreStationVarName;
-            public string MDCSPreStationVarValue;   
-        }
+     
 
         #endregion
 
         #region MDCS
 
-        private struct TestResult
-        {
-            public bool TestPassed;
-            public int  TestFailCode;
-            public string TestFailMessage;
-            public string TestStatus;
-        }
-
-        private struct TestRecord
-        {    
-            public string SN;
-            public string SKU;
-            public string Model;
-            public string ToolNumber;
-            public string ToolRev;
-
-            public string IMEI;
-            public string MEID;
-            public string IMEI2;
-            public string MEID2;
-            public string BDA;
-            public string MACAddress;
-            public string AndroidOS;
-            public string HWVersion;
-            public string AccelerometerTest;
-            public string GyroscopeSensorTest;
-            public string PressureSensorTest;
-            public string ProximitySensorTest;
-       
-            // Value
-
-
-
-            public double TestTotalTime;
-        }
-
-        private struct TestSaveData
-        {
-            public TestResult TestResult;
-            public TestRecord TestRecord;
-        }
+    
 
         #endregion
 
         #region Variable
 
-        private bool m_bRunInitialized = false;
-        private ModelOptionData m_stModelOptionData;
+   
         private TestSaveData m_stTestMDCSData;
 
         #endregion
@@ -133,6 +74,11 @@ namespace F002520
         }
 
         public override bool TestReadMFGData()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool TestCheckRFResult()
         {
             throw new NotImplementedException();
         }
@@ -198,6 +144,16 @@ namespace F002520
         }
 
         public override bool TestEnd()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool SendDataToMDCS()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool SendMES()
         {
             throw new NotImplementedException();
         }

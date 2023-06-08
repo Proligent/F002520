@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SmartFactory.ExternalDLL;
+using System.IO;
 
 namespace F002520
 {
@@ -47,15 +48,27 @@ namespace F002520
             return IsConnected;
         }
 
+        public static bool DeleteMDCSSqueueXmlFile()
+        {
+            try
+            {
+                string strXMLPath = System.IO.Path.GetTempPath() + "\\" + "mdcsqueue.xml";
 
+                if (File.Exists(strXMLPath) == true)
+                {
+                    File.Delete(strXMLPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                string strr = ex.Message;
+                return false;
+            }
 
-
-        #region MES
+            return true;
+        }
 
      
-
-        #endregion
-
 
 
     }

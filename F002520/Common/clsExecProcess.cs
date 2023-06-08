@@ -32,13 +32,11 @@ namespace F002520
 
         public clsExecProcess()
         {
-
         }
 
         #endregion
 
         #region Function
-
 
         public bool ExcuteCmd(string str_cmd)
         {
@@ -299,51 +297,60 @@ namespace F002520
                 return false;
             }
 
-             ResultList.Clear();
-             Process process = new Process();
-             ProcessStartInfo startInfo = new ProcessStartInfo();
+            List<string> List = new List<string>();
+            List.Clear();
 
-             try
-             {
-                 startInfo.FileName = @"C:\Windows\System32\cmd.exe";
-                 startInfo.Arguments = "/C" + str_cmd;
-                 startInfo.UseShellExecute = false;
-                 startInfo.RedirectStandardInput = false;
-                 startInfo.RedirectStandardOutput = true;
-                 startInfo.CreateNoWindow = true;
-                 //startInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                 process.StartInfo = startInfo;
+            Process process = new Process();
 
-                 if (milliSeconds == 0)
-                 {
-                     process.WaitForExit();
-                 }
-                 else
-                 {
-                     process.WaitForExit(milliSeconds);                    //等待进程结束，等待时间为指定的毫秒
-                 }
+            try
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo();
+                startInfo.FileName = "C:\\Windows\\system32\\cmd.exe";
+                startInfo.Arguments = " /c " + str_cmd;
+                startInfo.UseShellExecute = false;
+                startInfo.RedirectStandardInput = true;
+                startInfo.RedirectStandardOutput = true;
+                startInfo.RedirectStandardError = true;           // 重定向错误输出 
+                startInfo.CreateNoWindow = true;
+                //startInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                process.StartInfo = startInfo;
 
-                 string line = "";
-                 StreamReader streamReader = process.StandardOutput;
-                 while (((line = streamReader.ReadLine()) != null))
-                 {
-                     if (line.Contains("id="))
-                     {
-                         ResultList.Add(line);
-                     }
-                 }
-             }
-             catch(Exception ex)
-             {
-                 m_str_ErrMsg = "Exception:" + ex.Message;
-                 return false;
-             }
-             finally
-             {
-                 if (process != null)
-                     process.Close();
-             }
+                process.Start();
 
+                if (milliSeconds == 0)
+                {
+                    process.WaitForExit();
+                }
+                else
+                {
+                    process.WaitForExit(milliSeconds);                    //等待进程结束，等待时间为指定的毫秒
+                }
+
+                string line = "";
+                StreamReader streamReader = process.StandardOutput;
+                while (((line = streamReader.ReadLine()) != null))
+                {
+                    if (line.Contains("id="))
+                    {
+                        List.Add(line);
+                    }
+                }
+
+                ResultList = List;
+            }
+            catch (Exception ex)
+            {
+                m_str_ErrMsg = "Exception:" + ex.Message;
+                return false;
+            }
+            finally
+            {   
+                if (process != null)
+                {
+                    process.Dispose();
+                }
+            }
+          
              return true;
         }
 
