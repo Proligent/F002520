@@ -28,7 +28,7 @@ namespace F002520
         #region Variable
 
    
-        private TestSaveData m_stTestMDCSData;
+   
 
         #endregion
 
@@ -40,16 +40,16 @@ namespace F002520
 
         #region TestItem
 
-        public override bool TestInit()
+        public override bool TestInit(ref string strErrorMessage)
         {
 
 
             throw new NotImplementedException();
         }
 
-        public override bool TestPowerOn()
+        public override bool TestPowerOn(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
 
             try
             { 
@@ -68,99 +68,112 @@ namespace F002520
             return true;
         }
 
-        public override bool TestCheckDeviceReady()
+        public override bool TestCheckDeviceReady(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestReadMFGData()
+        public override bool TestReadMFGData(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestCheckRFResult()
+        public override bool TestCheckRFResult(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestCheckPreStation()
+        public override bool TestCheckPreStation(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestAutoChangeOver()
+        public override bool TestAutoChangeOver(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestScreenOff()
+        public override bool TestScreenOff(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestCheckSensorList()
+        public override bool TestCheckSensorList(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestMoveDamBoardUp()
+        public override bool TestMoveDamBoardUp(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestGSensorCalibation()
+        public override bool TestGSensorCalibation(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestGYROSensorCalibration()
+        public override bool TestGYROSensorCalibration(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestPSensorCalibration()
+        public override bool TestPSensorCalibration(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestPSensorFunction()
+        public override bool TestPSensorFunction(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestAudioCalibration()
+        public override bool TestAudioCalibration(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestBarometerSensorOffset()
+        public override bool TestBarometerSensorOffset(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestReboot()
+        public override bool TestReboot(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool TestEnd()
+        public override bool TestEnd(ref string strErrorMessage)
         {
             throw new NotImplementedException();
         }
 
-        public override bool SendDataToMDCS()
-        {
-            throw new NotImplementedException();
-        }
+        //public override bool SendDataToMDCS()
+        //{
+        //    throw new NotImplementedException();
+        //}
 
-        public override bool SendMES()
-        {
-            throw new NotImplementedException();
-        }
+        //public override bool SendMES()
+        //{
+        //    throw new NotImplementedException();
+        //}
 
         #endregion
 
+        #region Public
 
+        public override bool EjectUSBCable()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override bool InsertUSBCable()
+        {
+            throw new NotImplementedException();
+        }
+
+
+        #endregion
 
     }
 }

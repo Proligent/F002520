@@ -1,1 +1,133 @@
-﻿<?xml version="1.0" encoding="utf-8" ?> 
+﻿<?xml version="1.0" encoding="utf-8" ?>
+
+<Configuration>
+
+  <TestItemList>
+    <Item Name="TestInit" Enable="TRUE"/>
+    <Item Name="TestPowerOn" Enable="TRUE"/>
+    <Item Name="TestCheckDeviceReady" Enable="TRUE"/>
+    <Item Name="TestMoveDamBoardUp" Enable="TRUE"/>
+    <Item Name="TestReadMFGData" Enable="TRUE"/>
+    <Item Name="TestCheckPreStation" Enable="TRUE"/>
+    <Item Name="TestAutoChangeOver" Enable="FALSE"/>
+    <Item Name="TestScreenOff" Enable="TRUE"/>
+    <Item Name="TestCheckSensorList" Enable="TRUE"/>
+    <Item Name="TestGSensorCalibation" Enable="TRUE"/>
+    <Item Name="TestGYROSensorCalibration" Enable="FALSE"/>
+    <Item Name="TestPSensorCalibration" Enable="TRUE"/>
+    <Item Name="TestPSensorFunction" Enable="TRUE"/>
+    <Item Name="TestAudioCalibration" Enable="TRUE"/>
+    <Item Name="TestBarometerSensorOffset" Enable="FALSE"/>
+    <Item Name="TestReboot" Enable="TRUE"/>
+    <Item Name="TestEnd" Enable="TRUE"/>
+  </TestItemList>
+
+
+  <TestItemParameterList>
+
+    <TestInit>
+    </TestInit>
+
+    <TestPowerOn>
+      <Port1>0</Port1>
+      <Status1>HIGH</Status1>
+      <Port2>1</Port2>
+      <Status2>LOW</Status2>
+    </TestPowerOn>
+
+    <TestCheckDeviceReady>
+      <ReConnectTimes>3</ReConnectTimes>
+    </TestCheckDeviceReady>
+
+    <TestReadMFGData>
+    </TestReadMFGData>
+
+    <!--<TestCheckRFResult>
+      <MDCSVarName>CheckRFRlt</MDCSVarName>
+      <GetRFResultPersist>adb shell getprop persist.sys.RFRlt</GetRFResultPersist>
+      <DelayAfter>0</DelayAfter>
+    </TestCheckRFResult>-->
+
+    <TestCheckPreStation>
+      <PreStationDeviceName>F002294_CT47_RF_Fixture</PreStationDeviceName>
+      <VarName>failcode</VarName>
+      <VarTargetResult>0</VarTargetResult>
+    </TestCheckPreStation>
+
+    <!--<TestAutoChangeOver>
+      <ScanSheetStation>SC</ScanSheetStation>
+      <SWVersionControl>FALSE</SWVersionControl>
+    </TestAutoChangeOver>-->
+
+    <TestScreenOff>
+    </TestScreenOff>
+
+    <TestMoveDamBoardUp>
+      <Position>5.0</Position>
+    </TestMoveDamBoardUp>
+
+    <TestCheckSensorList>
+    </TestCheckSensorList>
+
+    <TestGSensorCalibation>
+      <CalibrationCmd>adb shell ssc_drva_test -sensor=accel -factory_test=2 -duration=10</CalibrationCmd>
+      <GetMDBCmd>adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET</GetMDBCmd>
+    </TestGSensorCalibation>
+
+    <TestGYROSensorCalibration>
+      <CalibrationCmd>adb shell ssc_drva_test -sensor=gyro -factory_test=2 -duration=10</CalibrationCmd>
+      <GetMDBCmd>adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET</GetMDBCmd>
+    </TestGYROSensorCalibration>
+
+    <TestPSensorCalibration>
+      <NearPosition>5.0</NearPosition>
+      <FarPosition>15.0</FarPosition>
+      <FarCalibrationCmd>adb shell ssc_drva_test -sensor=proximity -factory_test=2 -duration=5 -sample_rate=-1</FarCalibrationCmd>
+      <NearCalibrationCmd>adb shell ssc_drva_test -sensor=proximity -factory_test=0 -duration=5 -sample_rate=-1</NearCalibrationCmd>
+      <GetMDBCmd>adb shell su 0 mfg-tool -g PROXIMITY_CALIBRATION_EXTEND</GetMDBCmd>
+    </TestPSensorCalibration>
+
+    <TestPSensorFunction>
+      <NearPosition>2.5</NearPosition>
+      <FarPosition>15.0</FarPosition>
+      <GetPSensorLog>adb shell sns_hal_batch -s 8 -r 100 -sr 100 -d 3</GetPSensorLog>
+    </TestPSensorFunction>
+
+    <TestAudioCalibration>
+      <GetPAName>adb shell getprop ro.vendor.hon.audioPA.name</GetPAName>
+      <CalibrationCmd>adb shell sh /vendor/bin/max98390_calibration.sh</CalibrationCmd>
+      <GetMDBCmd>adb shell mfg-tool -g MAX98390L_RDC</GetMDBCmd>
+    </TestAudioCalibration>
+
+    <!--<TestBarometerSensorOffset>
+      <OffsetValue>0.565656</OffsetValue>
+    </TestBarometerSensorOffset>-->
+
+    <TestReboot>
+      <!--Reboot | APK-->
+      <Mode>Reboot</Mode>
+      <ApkCmd>adb shell am start -n com.honeywell.testing/.BITActivity</ApkCmd>
+    </TestReboot>
+
+    <TestEnd>
+    </TestEnd>
+
+  </TestItemParameterList>
+
+
+  <TestConfig>
+
+    <MES>
+      <Enable>FALSE</Enable>
+      <Station>SC</Station>
+    </MES>
+
+    <MDCS>
+      <Enable>TRUE</Enable>
+      <DeviceName>F002520_CT47_SensorK_Fixture</DeviceName>
+      <URL>http://hsm-mdcsws-ch3u.honeywell.com/MDCSWebService/MDCSService.asmx</URL>
+    </MDCS>
+
+  </TestConfig>
+
+</Configuration>

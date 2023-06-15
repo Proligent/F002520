@@ -141,6 +141,12 @@
     <Compile Include="Common\CPLCDave.cs" />
     <Compile Include="Common\Logger.cs" />
     <Compile Include="Common\USBEnumerator.cs" />
+    <Compile Include="Forms\frmFail.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\frmFail.Designer.cs">
+      <DependentUpon>frmFail.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\frmMCF.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -175,6 +181,9 @@
     <Compile Include="Platform\clsSensorKTestFactory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="Forms\frmFail.resx">
+      <DependentUpon>frmFail.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\frmMCF.resx">
       <DependentUpon>frmMCF.cs</DependentUpon>
     </EmbeddedResource>
@@ -245,7 +254,6 @@
     <Content Include="Lib\QMSL_MSVC10R.dll" />
     <Content Include="Lib\SmartFactory.ExternalDLL.dll" />
     <Content Include="Lib\WinTcpS7_1K.dll" />
-    <Content Include="TestConfig\TestItem\CT40\CT40P_SensorK_TestItem.xml" />
     <Content Include="TestConfig\TestItem\CT45\CT45_SensorK_TestItem.xml">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

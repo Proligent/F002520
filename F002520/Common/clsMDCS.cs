@@ -323,7 +323,8 @@ namespace F002520
                 m_obj_MDCSDevice.AddStringVariable("MAX98390L_TROOM_BEFORE", m_obj_Data.TestRecord.MAX98390L_TROOM_BEFORE);
 
                 // Numeric Variable
-                m_obj_MDCSDevice.AddNumericVariable("TestTotalTime", m_obj_Data.TestRecord.TestTotalTime);
+                //m_obj_MDCSDevice.AddNumericVariable("TestTotalTime", m_obj_Data.TestRecord.TestTotalTime);
+                m_obj_MDCSDevice.AddStringVariable("TestTotalTime", m_obj_Data.TestRecord.TestTotalTime);
 
                 // Send Data
                 if (m_obj_MDCSDevice.SendMDCSTestRecord() == false)

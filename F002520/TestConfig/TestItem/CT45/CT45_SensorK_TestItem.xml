@@ -14,7 +14,7 @@
     <Item Name="TestScreenOff" Enable="TRUE"/>
     <Item Name="TestCheckSensorList" Enable="TRUE"/>
     <Item Name="TestGSensorCalibation" Enable="TRUE"/>
-    <Item Name="TestGYROSensorCalibration" Enable="TRUE"/>
+    <Item Name="TestGYROSensorCalibration" Enable="FALSE"/>
     <Item Name="TestPSensorCalibration" Enable="TRUE"/>
     <Item Name="TestPSensorFunction" Enable="TRUE"/>
     <Item Name="TestAudioCalibration" Enable="TRUE"/>
@@ -52,7 +52,6 @@
     </TestCheckPreStation>
 
     <TestAutoChangeOver>
-      <!--<MESStation>SC</MESStation>-->
       <ScanSheetStation>SC</ScanSheetStation>
       <SWVersionControl>FALSE</SWVersionControl>
     </TestAutoChangeOver>
@@ -61,7 +60,6 @@
     </TestScreenOff>
 
     <TestMoveDamBoardUp>
-      <!--<Home>19.7</Home>-->
       <Position>5.0</Position>
     </TestMoveDamBoardUp>
 
@@ -120,7 +118,7 @@
 
     <MDCS>
       <Enable>TRUE</Enable>
-      <DeviceName>F002520_CT45_SensorK_Fixture|F002520_CT45P_SensorK_Fixture</DeviceName>
+      <DeviceName>F002520_CT45P_SensorK_Fixture|F002520_CT45_SensorK_Fixture</DeviceName>
       <URL>http://hsm-mdcsws-ch3u.honeywell.com/MDCSWebService/MDCSService.asmx</URL>
     </MDCS>
 

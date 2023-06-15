@@ -91,6 +91,11 @@ namespace F002520
                 txtBoxSKU.Text = "CT45L1N-27D120G";
                 btnOK.Focus();
             }
+            if (e.KeyCode == Keys.F2)
+            {
+                txtBoxSKU.Text = "CT47-X1N-3ED120G";
+                btnOK.Focus();
+            }
 
             if (e.KeyValue == 13)
             {

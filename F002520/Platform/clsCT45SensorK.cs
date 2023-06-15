@@ -30,20 +30,20 @@ namespace F002520
 
         #endregion
 
-
         #region TestItem
 
-        public override bool TestInit()
+        public override bool TestInit(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
 
             try
             {
                 strTestItem = MethodBase.GetCurrentMethod().Name;
 
-                InitUnitDeviceInfo(); 
-   
+                InitUnitDeviceInfo();
+
+                InitNIPort();
             }
             catch(Exception ex)
             {
@@ -54,48 +54,21 @@ namespace F002520
             return true;
         }
 
-        public override bool TestPowerOn()
+        public override bool TestPowerOn(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
-            bool bFlag = false;
-            double dValue_AI0 = 0.0;
-            double dValue_AI1 = 0.0;
+            strErrorMessage = ""; 
+            bool bRes = false;
 
             try
-            {         
-                #region Pluge USB Pogopin
-
-                NISetDigital(0, 0, 1);  // DO0_0 H
-                NISetDigital(0, 1, 0);  // DO0_1 L
-                clsUtil.Dly(0.5);
-
-                #endregion
-
-                #region Check Cylinder Position
-
-                for (int i = 0; i < 5; i++)
-                {             
-                    dValue_AI0 = NIGetAnalog(0);    // AI0 < 2.0 V
-                    dValue_AI1 = NIGetAnalog(1);    // AI1 > 3.0 V
-                    if (dValue_AI0 < 2.0 && dValue_AI1 > 3.0)
-                    {
-                        bFlag = true;
-                        break;
-                    }
-                    else
-                    {
-                        bFlag = false;
-                        clsUtil.Dly(1.0);
-                        continue;
-                    }
-                }
-                if (bFlag == false)
+            {     
+        
+                bRes = InsertUSBCable();
+                if (bRes == false)
                 {
-                    strErrorMessage = "Fail to Pluge USB Pogopin !";
+                    strErrorMessage = "Fail to insert USB cable !!!";
                     return false;
                 }
 
-                #endregion       
             }
             catch (Exception ex)
             {
@@ -106,9 +79,9 @@ namespace F002520
             return true;
         }
 
-        public override bool TestCheckDeviceReady()
+        public override bool TestCheckDeviceReady(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
             bool bFlag = false;
@@ -211,9 +184,9 @@ namespace F002520
             return true;
         }
 
-        public override bool TestReadMFGData()
+        public override bool TestReadMFGData(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             bool bFlag = false;
 
             try
@@ -276,9 +249,9 @@ namespace F002520
             return true;
         }
 
-        public override bool TestCheckRFResult()
+        public override bool TestCheckRFResult(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             //bool bFlag = false;
 
             try
@@ -296,9 +269,9 @@ namespace F002520
             return true;
         }
 
-        public override bool TestCheckPreStation()
+        public override bool TestCheckPreStation(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
             bool bFlag = false;   
@@ -443,9 +416,9 @@ namespace F002520
             return true;   
         }
 
-        public override bool TestAutoChangeOver()
+        public override bool TestAutoChangeOver(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             bool bRes = false;
             bool bFlag = false;
             //bool MES_Enable = false;
@@ -453,7 +426,8 @@ namespace F002520
             string strEID = "";
             string strWorkOrder = "";
             string strTestItem = "";        
-            string OptionMES_Enable = Program.g_mainForm.m_stOptionData.MES_Enable;   
+            //string OptionMES_Enable = Program.g_mainForm.m_stOptionData.MES_Enable;   
+            string OptionMES_Enable = frmMain.m_stOptionData.MES_Enable;   
             string XmlMES_Enable = "";
             string MESStationName = ""; 
             string ScanSheetStationName = "";
@@ -627,9 +601,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestScreenOff()
+        public override bool TestScreenOff(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";  
             bool bFlag = false;
         
@@ -668,9 +642,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestMoveDamBoardUp()
+        public override bool TestMoveDamBoardUp(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";     
             double dHome = 0.0;
             double dPosition = 0.0;
@@ -704,9 +678,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestCheckSensorList()
+        public override bool TestCheckSensorList(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bFlag = false;
 
@@ -743,9 +717,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestGSensorCalibation()
+        public override bool TestGSensorCalibation(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
             bool bFlag = false;
@@ -793,7 +767,7 @@ namespace F002520
                     DisplayMessage("Run CMD: " + strRunCmd);
 
                     bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);   // 15s              
-                    DisplayMessage("Result: \r\n" + strResult);  
+                    DisplayMessage("Result: \r\n" + strResult);
                     if (strResult.IndexOf("calibration PASS", StringComparison.OrdinalIgnoreCase) == -1)
                     {
                         strErrorMessage = "Run Cmd to do GSensor Calibration fail !!!";
@@ -801,38 +775,41 @@ namespace F002520
                         clsUtil.Dly(3.0);
                         continue;
                     }
-
-                    #region Compare Before and After Value
-
-                    //string cmd = "adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET";
-                    bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
-                    DisplayMessage("Run CMD: " + strValueCmd);
-                    DisplayMessage("After GSensor Calibration, ACCEL_ZERO_OFFSET=" + strResult.ToUpper());
-                    ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
-                    m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
-                    frmMain.m_stTestSaveData.TestRecord.ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
-
-                    if (strResult.Contains("000000000000000000000000"))  // Equal to default value
-                    {
-                        strErrorMessage = "GSensor calibration fail, ACCEL_ZERO_OFFSET still default value !!!";
-                        bFlag = false;
-                        clsUtil.Dly(3.0);
-                        continue;
-                    }
-                    if (ACCEL_ZERO_OFFSET_AFTER == ACCEL_ZERO_OFFSET_BEFORE)
-                    {
-                        strErrorMessage = "Before and After calibration, ACCEL_ZERO_OFFSET value not changed !!!";
-                        bFlag = false;
-                        clsUtil.Dly(3.0);
-                        continue;
-                    }
                     else
                     {
-                        bFlag = true;
-                        break;           
-                    }
+                        // Calibration Pass
+                        #region Compare Before and After Value
 
-                    #endregion
+                        //string cmd = "adb shell su 0 mfg-tool -g ACCEL_ZERO_OFFSET";
+                        bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
+                        DisplayMessage("Run CMD: " + strValueCmd);
+                        DisplayMessage("After GSensor Calibration, ACCEL_ZERO_OFFSET=" + strResult.ToUpper());
+                        ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
+                        m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
+                        frmMain.m_stTestSaveData.TestRecord.ACCEL_ZERO_OFFSET_AFTER = strResult.ToUpper();
+
+                        if (strResult.Contains("000000000000000000000000"))  // Equal to default value
+                        {
+                            strErrorMessage = "GSensor calibration fail, ACCEL_ZERO_OFFSET still default value !!!";
+                            bFlag = false;
+                            clsUtil.Dly(3.0);
+                            continue;
+                        }
+                        if (ACCEL_ZERO_OFFSET_AFTER == ACCEL_ZERO_OFFSET_BEFORE)
+                        {
+                            strErrorMessage = "Before and After calibration, ACCEL_ZERO_OFFSET value not changed !!!";
+                            bFlag = false;
+                            clsUtil.Dly(3.0);
+                            continue;
+                        }
+                        else
+                        {
+                            bFlag = true;
+                            break;
+                        }
+
+                        #endregion              
+                    }             
                 }
                 if (bFlag == false)
                 {
@@ -860,9 +837,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestGYROSensorCalibration()
+        public override bool TestGYROSensorCalibration(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
             bool bFlag = false;
@@ -918,38 +895,40 @@ namespace F002520
                         clsUtil.Dly(3.0);
                         continue;
                     }
-
-                    #region Compare Before and After Value
-
-                    //string cmd = "adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET";
-                    bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
-                    DisplayMessage("Run CMD: " + strValueCmd);
-                    DisplayMessage("After GYRO Sensor Calibration, GYRO_ZERO_OFFSET=" + strResult);
-                    GYRO_ZERO_OFFSET_AFTER = strResult.ToUpper();
-                    m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_AFTER = GYRO_ZERO_OFFSET_AFTER;
-                    frmMain.m_stTestSaveData.TestRecord.GYRO_ZERO_OFFSET_AFTER = GYRO_ZERO_OFFSET_AFTER;
-
-                    if (strResult.Contains("000000000000000000000000"))  // Equal to default value
-                    {
-                        strErrorMessage = "GYRO Sensor calibration fail, GYRO_ZERO_OFFSET still default value !!!";
-                        bFlag = false;
-                        clsUtil.Dly(3.0);
-                        continue;
-                    }
-                    if (GYRO_ZERO_OFFSET_AFTER == GYRO_ZERO_OFFSET_BEFORE)
-                    {
-                        strErrorMessage = "Before and After calibration, GYRO_ZERO_OFFSET value not changed !!!";
-                        bFlag = false;
-                        clsUtil.Dly(3.0);
-                        continue;
-                    }
                     else
                     {
-                        bFlag = true;
-                        break;
-                    }
+                        #region Compare Before and After Value
 
-                    #endregion
+                        //string cmd = "adb shell su 0 mfg-tool -g GYRO_ZERO_OFFSET";
+                        bRes = clsProcess.ExcuteCmd(strValueCmd, 200, ref strResult);
+                        DisplayMessage("Run CMD: " + strValueCmd);
+                        DisplayMessage("After GYRO Sensor Calibration, GYRO_ZERO_OFFSET=" + strResult);
+                        GYRO_ZERO_OFFSET_AFTER = strResult.ToUpper();
+                        m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_AFTER = GYRO_ZERO_OFFSET_AFTER;
+                        frmMain.m_stTestSaveData.TestRecord.GYRO_ZERO_OFFSET_AFTER = GYRO_ZERO_OFFSET_AFTER;
+
+                        if (strResult.Contains("000000000000000000000000"))  // Equal to default value
+                        {
+                            strErrorMessage = "GYRO Sensor calibration fail, GYRO_ZERO_OFFSET still default value !!!";
+                            bFlag = false;
+                            clsUtil.Dly(3.0);
+                            continue;
+                        }
+                        if (GYRO_ZERO_OFFSET_AFTER == GYRO_ZERO_OFFSET_BEFORE)
+                        {
+                            strErrorMessage = "Before and After calibration, GYRO_ZERO_OFFSET value not changed !!!";
+                            bFlag = false;
+                            clsUtil.Dly(3.0);
+                            continue;
+                        }
+                        else
+                        {
+                            bFlag = true;
+                            break;
+                        }
+
+                        #endregion       
+                    }      
                 }
                 if (bFlag == false)
                 {
@@ -977,9 +956,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestPSensorCalibration()
+        public override bool TestPSensorCalibration(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
             bool bFlag = false;
@@ -1155,9 +1134,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestPSensorFunction()
+        public override bool TestPSensorFunction(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bFlag = false;
             string strNearPosition = "";
@@ -1259,9 +1238,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestAudioCalibration()
+        public override bool TestAudioCalibration(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
             bool bFlag = false;
@@ -1274,8 +1253,6 @@ namespace F002520
             string MAX98390L_RDC_BEFORE = m_stUnitDeviceInfo.MAX98390L_RDC_BEFORE;
             string MAX98390L_TROOM_AFTER = "";
             string MAX98390L_RDC_AFTER = "";
-
-            frmMain.m_stTestSaveData.TestRecord.TestAudioCalibration = "Fail";
 
             try
             {
@@ -1319,7 +1296,7 @@ namespace F002520
                 DisplayMessage("Send Cmd: " + AudioPANameCmd);
                 DisplayMessage("Audio PA Name: " + strResult);
                 m_stUnitDeviceInfo.AudioPAName = strResult;
-                frmMain.m_stTestSaveData.TestRecord.AudioPAName = AudioPANameCmd;
+                frmMain.m_stTestSaveData.TestRecord.AudioPAName = strResult;
 
                 if (strResult.IndexOf("max98390xx", StringComparison.OrdinalIgnoreCase) == -1) // Not Max Audio Chip
                 {
@@ -1328,6 +1305,8 @@ namespace F002520
                 }
 
                 #endregion
+
+                frmMain.m_stTestSaveData.TestRecord.TestAudioCalibration = "Fail";
 
                 #region Get MDB Value
 
@@ -1443,16 +1422,14 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestBarometerSensorOffset()
+        public override bool TestBarometerSensorOffset(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
             string strCmd = "";
             string strResult = "";
             string OFFSETVALUE = "";
-
-            frmMain.m_stTestSaveData.TestRecord.TestBarometerCalibration = "Fail";
 
             try
             {
@@ -1486,6 +1463,8 @@ namespace F002520
                 }
 
                 #endregion
+
+                frmMain.m_stTestSaveData.TestRecord.TestBarometerCalibration = "Fail";
 
                 #region Write Offset Value
 
@@ -1534,9 +1513,9 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestReboot()
+        public override bool TestReboot(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
          
@@ -1599,16 +1578,46 @@ namespace F002520
             return true; 
         }
 
-        public override bool TestEnd()
+        public override bool TestEnd(ref string strErrorMessage)
         {
-            string strErrorMessage = "";
+            strErrorMessage = "";
+            //bool bFlag = false;
+            //double dValue_AI0 = 0.0;
+            //double dValue_AI1 = 0.0;
 
             try
-            {               
-                // Eject USB Pogopin
-                DisplayMessage("Eject USB Pogopin");
-                NISetDigital(0, 0, 0);  // DO0_0 L
-                NISetDigital(0, 1, 1);  // DO0_1 H
+            {
+                #region Eject USB Pogopin
+    
+                //DisplayMessage("Eject USB Pogopin");
+                //NISetDigital(0, 0, 0);  // DO0_0 L
+                //NISetDigital(0, 1, 1);  // DO0_1 H
+                //clsUtil.Dly(0.5);
+ 
+                //for (int i = 0; i < 5; i++)
+                //{
+                //    dValue_AI0 = NIGetAnalog(0);    // AI0 > 3.0 V
+                //    dValue_AI1 = NIGetAnalog(1);    // AI1 < 2.0 V
+                //    if (dValue_AI0 > 3.0 && dValue_AI1 < 2.0)
+                //    {
+                //        bFlag = true;
+                //        break;
+                //    }
+                //    else
+                //    {
+                //        bFlag = false;
+                //        clsUtil.Dly(1.0);
+                //        continue;
+                //    }
+                //}
+                //if (bFlag == false)
+                //{
+                //    strErrorMessage = "Fail to Eject USB Pogopin !";
+                //    return false;
+                //}
+
+                #endregion    
+   
 
             }
             catch (Exception ex)
@@ -1620,45 +1629,43 @@ namespace F002520
             return true; 
         }
 
-        public override bool SendDataToMDCS()
-        {
-            string strErrorMessage = "";
+        #region Obsolote
 
-            try
-            { 
-            
+        //public override bool SendDataToMDCS()
+        //{
+        //    string strErrorMessage = "";
 
+        //    try
+        //    {        
 
+        //    }
+        //    catch(Exception ex)
+        //    {
+        //        strErrorMessage = "Exception:" + ex.Message;
+        //        return false;
+        //    }
 
-            }
-            catch(Exception ex)
-            {
-                strErrorMessage = "Exception:" + ex.Message;
-                return false;
-            }
+        //    return true; 
+        //}
 
-            return true; 
-        }
+        //public override bool SendMES()
+        //{
+        //    string strErrorMessage = "";
 
-        public override bool SendMES()
-        {
-            string strErrorMessage = "";
+        //    try
+        //    {
 
-            try
-            {
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        strErrorMessage = "Exception:" + ex.Message;
+        //        return false;
+        //    }
 
+        //    return true; 
+        //}
 
-
-
-            }
-            catch (Exception ex)
-            {
-                strErrorMessage = "Exception:" + ex.Message;
-                return false;
-            }
-
-            return true; 
-        }
+        #endregion
 
         #endregion
 
@@ -1718,6 +1725,8 @@ namespace F002520
 
         #region Motor
 
+
+
         private bool OMRONMoveAbsolute(byte slave, int pos, int vel, uint acceleration, uint deceleration, ref string strErrorMessage)
         {
             strErrorMessage = "";
@@ -1743,7 +1752,121 @@ namespace F002520
 
         #endregion
 
+        #region Public
+
+        public override bool EjectUSBCable()
+        {
+            bool bFlag = false;
+            double dValue_AI0 = 0.0;
+            double dValue_AI1 = 0.0;
+
+            try
+            {
+                #region Eject USB Pogopin
+
+                //DisplayMessage("Eject USB Pogopin");
+                NISetDigital(0, 0, 0);  // DO0_0 L
+                NISetDigital(0, 1, 1);  // DO0_1 H
+                clsUtil.Dly(0.5);
+
+                #endregion
+
+                #region Check Cylinder Position
+
+                for (int i = 0; i < 5; i++)
+                {
+                    dValue_AI0 = NIGetAnalog(0);    // AI0 > 3.0 V
+                    dValue_AI1 = NIGetAnalog(1);    // AI1 < 2.0 V
+                    if (dValue_AI0 > 3.0 && dValue_AI1 < 2.0)
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                    else
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage("Fail to Eject USB Pogopin !");
+                    return false;
+                }
+
+                #endregion       
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        public override bool InsertUSBCable()
+        {
+            bool bFlag = false;
+            double dValue_AI0 = 0.0;
+            double dValue_AI1 = 0.0;
+
+            try
+            {
+                #region Insert USB Pogopin
+
+                DisplayMessage("Insert USB Pogopin");
+                NISetDigital(0, 0, 1);  // DO0_0 H
+                NISetDigital(0, 1, 0);  // DO0_1 L
+                clsUtil.Dly(0.5);
+
+                #endregion
+
+                #region Check Cylinder Position
+
+                for (int i = 0; i < 5; i++)
+                {
+                    dValue_AI0 = NIGetAnalog(0);    // AI0 < 2.0 V
+                    dValue_AI1 = NIGetAnalog(1);    // AI1 > 3.0 V
+                    if (dValue_AI0 < 2.0 && dValue_AI1 > 3.0)
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                    else
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage("Fail to Insert USB Pogopin !");
+                    return false;
+                }
+
+                #endregion
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        #endregion
+
         #region Private
+
+        private void InitNIPort()
+        {
+            NISetDigital(0, 0, 0);  // DO0_0 L
+            NISetDigital(0, 1, 0);  // DO0_1 L
+            //NISetDigital(0, 2, 0);  // DO0_2 L
+            //NISetDigital(0, 3, 0);  // DO0_3 L
+        }
 
         private void Reconnect()
         {
@@ -1774,6 +1897,36 @@ namespace F002520
             m_stUnitDeviceInfo.ConfigNumber = "";
             m_stUnitDeviceInfo.EID = "";
             m_stUnitDeviceInfo.WorkOrder = "";
+            m_stUnitDeviceInfo.OSPN = "";
+            m_stUnitDeviceInfo.Status = "";
+
+            // MDB
+            m_stUnitDeviceInfo.WLAN_MAC_ADDRESS = "";
+            m_stUnitDeviceInfo.WLAN_AUX_MAC_ADDRESS = "";
+            m_stUnitDeviceInfo.BLUETOOTH_DEVICE_ADDRESS = "";
+            m_stUnitDeviceInfo.SECOND_BLUETOOTH_DEVICE_ADDRESS = "";
+
+            // Before
+            m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_BEFORE = "";
+            m_stUnitDeviceInfo.ACCELEROMETER_CALIBRATION_BEFORE = "";
+            m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_BEFORE = "";
+            m_stUnitDeviceInfo.GYROSCOPE_CALIBRATION_BEFORE = "";
+            m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_BEFORE = "";
+            m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_BEFORE = "";
+            m_stUnitDeviceInfo.MAX98390L_TROOM_BEFORE = "";
+            m_stUnitDeviceInfo.MAX98390L_RDC_BEFORE = "";
+
+            // After
+            m_stUnitDeviceInfo.ACCEL_ZERO_OFFSET_AFTER = "";
+            m_stUnitDeviceInfo.ACCELEROMETER_CALIBRATION_AFTER = "";
+            m_stUnitDeviceInfo.GYRO_ZERO_OFFSET_AFTER = "";
+            m_stUnitDeviceInfo.GYROSCOPE_CALIBRATION_AFTER = "";
+            m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_AFTER = "";
+            m_stUnitDeviceInfo.PROXIMITY_CALIBRATION_EXTEND_AFTER = "";
+            m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = "";
+            m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = "";
+
+            m_stUnitDeviceInfo.OFFSET_VALUE = "";
         }
 
         private bool CheckADBConnected(int times)
@@ -2087,6 +2240,7 @@ namespace F002520
 
                 // SN
                 string strSN = m_stUnitDeviceInfo.SN;
+                frmMain.m_strSN = m_stUnitDeviceInfo.SN;
                 if (string.IsNullOrWhiteSpace(strSN) || (strSN.Length != 10))
                 {
                     strErrorMessage = "Read mfg data fail: Invalid SN.";
@@ -2094,6 +2248,7 @@ namespace F002520
                 }
                 // SKU
                 string strSKU = m_stUnitDeviceInfo.SKU;
+                frmMain.m_strSKU = m_stUnitDeviceInfo.SKU;
                 if (string.IsNullOrWhiteSpace(strSKU))
                 {
                     strErrorMessage = "Read mfg data fail: Invalid SKU.";
@@ -2115,13 +2270,12 @@ namespace F002520
                     strErrorMessage = "Read MDB Model Not Match SKU Model !!!";
                     return false;
                 }
-                if (strModel.Contains(Program.g_mainForm.m_strModel) == false)  // take care !!!
+                if (strModel.Contains(frmMain.m_strModel) == false)  // take care !!!
                 {
                     MessageBox.Show("The Product Not Match the Production Line That You Selected !!!");
                     return false;
                 }
-
-                Program.g_mainForm.m_strModel = strModel;   // Confirm Device Model
+                frmMain.m_strModel = strModel;   // Confirm Device Model
 
                 // ISWWAN
                 if (strModel == "CT45")
@@ -2467,7 +2621,7 @@ namespace F002520
             bool bFlag = false;
             bool bPSensor = false;
             bool bGSensor = false;
-            bool bBarometerSensor = false;
+            //bool bBarometerSensor = false;
 
             string strFilePath = "";
 

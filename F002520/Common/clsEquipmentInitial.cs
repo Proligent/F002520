@@ -106,6 +106,41 @@ namespace F002520
             return true;
         }
 
+        public bool MotorMoveToHome(ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+
+            try
+            {
+                string MotorType = clsConfigHelper.servoMotor.DeviceType;
+                if (MotorType == "OMORN")
+                {       
+                    // Go Home
+                    if (m_objOMORN.Home(1, ref strErrorMessage) == false)
+                    {
+                        strErrorMessage = "Fail to Go Home: " + strErrorMessage;
+                        return false;
+                    }    
+                }
+                else if (MotorType == "PANASONIC")
+                {
+
+                }
+                else
+                {
+                    strErrorMessage = "Invalid Motor Type !!!";
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
         public bool InitPANASONICMotor()
         {
 
