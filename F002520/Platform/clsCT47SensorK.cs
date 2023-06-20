@@ -1742,6 +1742,7 @@ namespace F002520
 
             string REBOOT_MODE = "";
             string APK_CMD = "";
+            string Delay_SECOND = "";
 
             try
             {
@@ -1767,6 +1768,16 @@ namespace F002520
                 }
                 DisplayMessage("Param ApkCmd: " + APK_CMD);
 
+                // Delay
+                Delay_SECOND = GetTestItemParameter(strTestItem, "DelaySec");
+                if (string.IsNullOrWhiteSpace(Delay_SECOND))
+                {
+                    strErrorMessage = "Fail to parse DelaySec parameter !";
+                    return false;
+                }
+                double delayTime = Convert.ToDouble(Delay_SECOND);
+                DisplayMessage("Param DelaySec: " + Delay_SECOND);
+
                 #endregion
 
                 #region REBOOT
@@ -1775,13 +1786,13 @@ namespace F002520
                 {
                     DisplayMessage("Use adb reboot to shut down device ...");
                     bRes = AdbRebootDevice();
-                    clsUtil.Dly(3.0);           // Must add delay !!!
+                    clsUtil.Dly(delayTime);           // Must add delay !!!
                 }
                 else if (REBOOT_MODE == "APK")  // apk reboot, not real reboot indeed.
                 {
                     DisplayMessage("Use Apk cmd to shut down device ...");
                     bRes = ApkRebootDevice(APK_CMD);
-                    clsUtil.Dly(2.0);  
+                    clsUtil.Dly(delayTime);  
                 }
                 else
                 {

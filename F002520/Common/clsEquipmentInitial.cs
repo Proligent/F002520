@@ -4,6 +4,8 @@ using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+
 
 namespace F002520
 {
@@ -93,6 +95,12 @@ namespace F002520
             {
                 DisplayMessage(string.Format("Warning, Get Alarm Message:{0}, ErrorMessage:{1}", strResponse, strErrorMessage));
                 m_objOMORN.ClearAlarm(1, ref strErrorMessage);
+
+                if (strResponse.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)
+                {
+                    MessageBox.Show("请确认挡板在治具中间位置，重启治具电源后重新打开测试程序 !!!", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
             }
 
             // Go Home

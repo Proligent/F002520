@@ -19,6 +19,7 @@
       <Parity>Even</Parity>
       <DataBits>8</DataBits>
       <StopBits>1</StopBits>
+      <!--<Home>17.7</Home> CT47 Manual -->
       <Home>19.5</Home>
     </MOTOR>
 

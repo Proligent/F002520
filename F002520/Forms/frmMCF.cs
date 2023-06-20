@@ -88,10 +88,15 @@ namespace F002520
         {
             if (e.KeyCode == Keys.F1)
             {
-                txtBoxSKU.Text = "CT45L1N-27D120G";
+                txtBoxSKU.Text = "CT45P-L1N-37D1E0G";
                 btnOK.Focus();
             }
-            if (e.KeyCode == Keys.F2)
+            else if (e.KeyCode == Keys.F2)
+            {
+                txtBoxSKU.Text = "CT47-X1N-3ED120G";
+                btnOK.Focus();
+            }
+            else if (e.KeyCode == Keys.F3)
             {
                 txtBoxSKU.Text = "CT47-X1N-3ED120G";
                 btnOK.Focus();
