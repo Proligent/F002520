@@ -5,7 +5,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using OMLib;
+using OMLib.Communication;
+using OMLib.Communication.ModbusInfo;
+using OMLib.Products.AZSeries;
 
 namespace F002520
 {
@@ -17,9 +20,19 @@ namespace F002520
 
         // OMORN Motor
         private modbus_hon.ModbusOp.serialSettings m_modbusSetting = new modbus_hon.ModbusOp.serialSettings();
-        public  modbus_hon.ModbusOp m_objOMORN = new modbus_hon.ModbusOp(OMLib.PRODUCT.AR); 
+        public modbus_hon.ModbusOp m_objOMORN = new modbus_hon.ModbusOp(OMLib.PRODUCT.AR);
 
         // Panasonic Motor
+
+        #region Construct
+
+        public clsEquipmentInitial()
+        {
+            //Modbus.SerchDllPath("x86", "x64");
+            //this.m_objOMORN = new modbus_hon.ModbusOp(OMLib.PRODUCT.AR);
+        }
+
+        #endregion
 
 
         #region 
