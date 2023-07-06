@@ -9,6 +9,7 @@ using OMLib;
 using OMLib.Communication;
 using OMLib.Communication.ModbusInfo;
 using OMLib.Products.AZSeries;
+using OM_Modbus;
 
 namespace F002520
 {
@@ -19,17 +20,19 @@ namespace F002520
         public clsJYDAMDAQ m_objJYDAMDAQ = new clsJYDAMDAQ();
 
         // OMORN Motor
-        private modbus_hon.ModbusOp.serialSettings m_modbusSetting = new modbus_hon.ModbusOp.serialSettings();
-        public modbus_hon.ModbusOp m_objOMORN = new modbus_hon.ModbusOp(OMLib.PRODUCT.AR);
+        //private modbus_hon.ModbusOp.serialSettings m_modbusSetting = new modbus_hon.ModbusOp.serialSettings();
+        //public modbus_hon.ModbusOp m_objOMORN = new modbus_hon.ModbusOp(OMLib.PRODUCT.AR);
+
+        private OM_Modbus.OMModbus.SerialSetting m_modbusSetting = new OM_Modbus.OMModbus.SerialSetting();
+        public OM_Modbus.OMModbus m_objOMORN = new OM_Modbus.OMModbus(OMLib.PRODUCT.AR);
 
         // Panasonic Motor
+
 
         #region Construct
 
         public clsEquipmentInitial()
-        {
-            //Modbus.SerchDllPath("x86", "x64");
-            //this.m_objOMORN = new modbus_hon.ModbusOp(OMLib.PRODUCT.AR);
+        { 
         }
 
         #endregion
@@ -93,36 +96,86 @@ namespace F002520
             // Open Port
             if (m_objOMORN.PortOpen(m_modbusSetting, ref strErrorMessage) == false)
             {
-                strErrorMessage = "Fail to open Modbus Port: " + strErrorMessage;
                 return false;
             }
 
             // Get Alarm
-            string strResponse = "";
-            if (m_objOMORN.GetAlarm(ref strResponse, 1, ref strErrorMessage) == false)
+            string strResponse = ""; 
+            if (m_objOMORN.GetAlarm(1, ref strResponse, ref strErrorMessage) == false)
             {
-                strErrorMessage = "Fail to Get Alarm: " + strErrorMessage;
                 return false;
             }
-            if (!string.IsNullOrWhiteSpace(strResponse))
+            else
             {
-                DisplayMessage(string.Format("Warning, Get Alarm Message:{0}, ErrorMessage:{1}", strResponse, strErrorMessage));
-                m_objOMORN.ClearAlarm(1, ref strErrorMessage);
-
+                DisplayMessage(string.Format("Warning, Get Motor Alarm Code: {0} ", strResponse));
                 if (strResponse.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)
-                {
-                    MessageBox.Show("请确认挡板在治具中间位置，重启治具电源后重新打开测试程序 !!!", "警告", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                {        
+                    // Show Message
+                    MessageBox.Show(string.Format("获取到电机报警代码: {0}", strResponse), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("将挡板移动到治具中间位置，重启治具电源后重新打开测试程序 !!!", "解决方法", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                    // Reset Alarm
+                    m_objOMORN.ResetAlarm(1);   
                     return false;
                 }
             }
 
+            #region Obsolote
+            // Set Move Velocity (Can't Set Velocity here !!!)
+            //if (m_objOMORN.MoveVelocity(1, 5000, 2000, 2000, ref strErrorMessage) == false)
+            //{
+            //    return false;
+            //}
+            #endregion
+
             // Go Home
             if (m_objOMORN.Home(1, ref strErrorMessage) == false)
             {
-                strErrorMessage = "Fail to Go Home: " + strErrorMessage;
                 return false;
             }
 
+            // Check Position
+            int iRange = 10;    // Compare to Zero Position
+            int iPosition = 0;     
+            bool bFlag = false;
+            TimeSpan duration = TimeSpan.FromSeconds(12);
+            DateTime startTime = DateTime.Now;
+            while((DateTime.Now - startTime) < duration)
+            {
+                if (m_objOMORN.ReadActualPosition(1, ref iPosition, ref strErrorMessage) == false)
+                {
+                    bFlag = false;
+                    clsUtil.Dly(2.0);
+                    continue;
+                }
+                if (Math.Abs(iPosition) < iRange)
+                {
+                    bFlag = true;
+                    break;
+                }
+                else
+                {
+                    bFlag = false;
+                    clsUtil.Dly(2.0);
+                    continue;             
+                }   
+            }
+            if (bFlag == false)
+            {
+                // Get Alarm
+                string AlarmCode = "";
+                bool bRet = m_objOMORN.GetAlarm(1, ref strResponse, ref strErrorMessage);
+                if (bRet && AlarmCode.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)   //获取报警代码成功，并且报警代码不是0000(有警报)
+                {
+                    MessageBox.Show(string.Format("警告，获取到电机报警代码: {0}", AlarmCode), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    m_objOMORN.ResetAlarm(1);   
+                    // Feedback to PLC
+                }
+
+                DisplayMessage("Fail to Go Back to Home Position !!!", "ERROR");
+                return false;
+            }
+        
             DisplayMessage("Motor Go Back to Home Successful.");
             return true;
         }
@@ -139,9 +192,58 @@ namespace F002520
                     // Go Home
                     if (m_objOMORN.Home(1, ref strErrorMessage) == false)
                     {
-                        strErrorMessage = "Fail to Go Home: " + strErrorMessage;
                         return false;
-                    }    
+                    }
+                   
+
+                    #region Obsolote
+
+                    clsUtil.Dly(2.0);
+                    // 影响测试时间， 开个线程去检查
+                    // Check Position
+                    //int iRange = 10;    // Compare to Zero position
+                    //int iPosition = 0;
+                    //bool bFlag = false;
+                    //string strResponse = "";
+
+                    //TimeSpan duration = TimeSpan.FromSeconds(15);
+                    //DateTime startTime = DateTime.Now;
+                    //while ((DateTime.Now - startTime) < duration)
+                    //{
+                    //    if (m_objOMORN.ReadActualPosition(1, ref iPosition, ref strErrorMessage) == false)
+                    //    {
+                    //        bFlag = false;
+                    //        clsUtil.Dly(2.0);
+                    //        continue;
+                    //    }
+                    //    if (Math.Abs(iPosition) < iRange)
+                    //    {
+                    //        bFlag = true;
+                    //        break;
+                    //    }
+                    //    else
+                    //    {
+                    //        bFlag = false;
+                    //        clsUtil.Dly(2.0);
+                    //        continue;
+                    //    }
+                    //}
+                    //if (bFlag == false)
+                    //{
+                    //    // Get Alarm
+                    //    string AlarmCode = "";
+                    //    bool bRet = m_objOMORN.GetAlarm(1, ref strResponse, ref strErrorMessage);
+                    //    if (bRet && AlarmCode.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)   //获取报警代码成功，并且报警代码不是0000(有警报)
+                    //    {
+                    //        MessageBox.Show(string.Format("警告，获取到电机报警代码: {0}", AlarmCode), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    //        m_objOMORN.ResetAlarm(1);
+                    //        // Feedback to PLC
+                    //    }
+                    //    return false;
+                    //}
+
+                    #endregion
+
                 }
                 else if (MotorType == "PANASONIC")
                 {
@@ -184,9 +286,9 @@ namespace F002520
             Program.g_mainForm.ShowTestItem(message);
         }
 
-        private void DisplayMessage(string message)
+        private void DisplayMessage(string message, string level = "INFO")
         {
-            Program.g_mainForm.DisplayMessage(message);  
+            Program.g_mainForm.DisplayMessage(message, level);  
         }
 
         #endregion

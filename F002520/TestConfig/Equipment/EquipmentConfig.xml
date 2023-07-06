@@ -14,17 +14,18 @@
       <Enable>TRUE</Enable>
       <!-- OMORN | PANASONIC-->
       <DeviceType>OMORN</DeviceType>
-      <PortNum>4</PortNum>
+      <PortNum>15</PortNum>
       <BaudRate>9600</BaudRate>
       <Parity>Even</Parity>
       <DataBits>8</DataBits>
       <StopBits>1</StopBits>
       <!--<Home>17.7</Home> CT47 Manual -->
+      <!--<Home>19.5</Home>-->
       <Home>19.5</Home>
     </MOTOR>
 
     <PLC>
-      <Enable>FALSE</Enable>
+      <Enable>TRUE</Enable>
       <LocalIP>192.168.0.13</LocalIP>
       <PLCIP>192.168.0.1</PLCIP>
       <PLCPort>102</PLCPort>

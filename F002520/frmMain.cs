@@ -1267,6 +1267,7 @@ namespace F002520
             //    return false;
             //}
             m_bStop = false;
+            m_bMESEnable = false;
 
             ClearTestLog();
             InitMDCSVariable();
@@ -1405,7 +1406,7 @@ namespace F002520
                             }
                         }
                     }
-                    clsUtil.Dly(1.0);
+                    //clsUtil.Dly(1.0);
                 }
 
                 #endregion

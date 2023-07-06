@@ -242,8 +242,7 @@ namespace F002520
             catch(Exception ex)
             {
                 strErrorMessage = "TestReadMFGData Exception: " + ex.Message;
-                return false;
-            
+                return false;         
             }
 
             return true;
@@ -399,6 +398,7 @@ namespace F002520
                 }
                 if (bFlag == false)
                 {
+                    strErrorMessage = "Check Pre-Station Fail(检查前一站结果失败), " + strErrorMessage;
                     DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
@@ -663,8 +663,8 @@ namespace F002520
                 #endregion
 
                 // Move to 5cm Distance to Screen
-                m_dCurrentDamBoardPosition = 0.0;
-                if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                m_dCurrentDamBoardPosition = 0.0; 
+                if (MoveDamBoard(dPosition, dHome, ref strErrorMessage) == false)
                 {
                     return false;
                 }
@@ -1737,7 +1737,72 @@ namespace F002520
 
         #region Motor
 
+        private bool OMGetAlarm(byte slave, ref string strResponse, ref string strErrorMessage)
+        {
+            strResponse = "";
+            strErrorMessage = "";
+            bool bRes = false;
 
+            try
+            {
+                bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.GetAlarm(slave, ref strResponse, ref strErrorMessage);
+                if (bRes == false)
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool OMResetAlarm(byte slave)
+        {
+            bool bRes = false;
+
+            try
+            {
+                bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.ResetAlarm(slave);
+                if (bRes == false)
+                {
+                    return false;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool OMReadPosition(byte slave, ref int Position, ref string strErrorMessage)
+        {
+            Position = 0;
+            strErrorMessage = "";
+            bool bRes = false;
+
+            try
+            {
+                bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.ReadActualPosition(slave, ref Position, ref strErrorMessage);
+                if (bRes == false || Position == 0)
+                {
+                    //strErrorMessage = "Fail to read actual position." + strErrorMessage;
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
 
         private bool OMRONMoveAbsolute(byte slave, int pos, int vel, uint acceleration, uint deceleration, ref string strErrorMessage)
         {
@@ -2572,56 +2637,137 @@ namespace F002520
             }
         }
 
-        private bool MoveDamBoardUp(double dDistance, double dHome, ref string strErrorMessage)
+        #region Obsolote
+
+        //private bool MoveDamBoardUp(double dDistance, double dHome, ref string strErrorMessage)
+        //{
+        //    strErrorMessage = "";
+
+        //    try
+        //    {
+        //        int iStep = 0;
+        //        iStep = (int)((dHome - dDistance) / 0.012 *10);
+
+        //        if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
+        //        {
+        //            return false;
+        //        }
+
+        //        m_dCurrentDamBoardPosition = dDistance;      
+        //    }
+        //    catch(Exception ex)
+        //    {
+        //        strErrorMessage = "Exception:" + ex.Message;
+        //        return false;
+        //    }
+
+        //    return true;
+        //}
+
+        //private bool MoveDamBoardDown(double dDistance, double dHome, ref string strErrorMessage)
+        //{
+        //    strErrorMessage = "";
+
+        //    if (m_dCurrentDamBoardPosition == dDistance)
+        //    {
+        //        return true;
+        //    }
+
+        //    try
+        //    {
+        //        int iStep = 0;
+        //        iStep = (int)((dHome - dDistance) / 0.012 * 10);
+
+        //        if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
+        //        {
+        //            return false;
+        //        }
+
+        //        m_dCurrentDamBoardPosition = dDistance;         
+        //    }
+        //    catch(Exception ex)
+        //    {
+        //        strErrorMessage = "Exception:" + ex.Message;
+        //        return false;  
+        //    }
+
+        //    return true;
+        //}
+
+        #endregion
+
+        private bool MoveDamBoard(double dDistance, double dHome, ref string strErrorMessage)
         {
             strErrorMessage = "";
+            bool bFlag = false;
 
             try
             {
-                int iStep = 0;
-                iStep = (int)((dHome - dDistance) / 0.012 *10);
+                // Check Current Position
+                if (m_dCurrentDamBoardPosition == dDistance)
+                {
+                    DisplayMessage("The DamBoard Already at The Position !!!");
+                    return true;
+                }
 
+                // Move to Position
+                int iStep = 0;
+                iStep = (int)((dHome - dDistance) / 0.012 * 10);
                 if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
                 {
                     return false;
                 }
 
-                m_dCurrentDamBoardPosition = dDistance;      
+                m_dCurrentDamBoardPosition = dDistance;
+
+                // Check Position
+                int iRange = 5;
+                int iPosition = 0;
+                TimeSpan duration = TimeSpan.FromSeconds(8);
+                DateTime startTime = DateTime.Now;
+                while ((DateTime.Now - startTime) < duration)
+                {
+                    if (OMReadPosition(1, ref iPosition, ref strErrorMessage) == false) // Read Position
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                    if (Math.Abs(iPosition - iStep) < iRange)
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                    else
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    // Get Alarm
+                    string AlarmCode = "";
+                    bool bRet = OMGetAlarm(1, ref AlarmCode, ref strErrorMessage);
+                    if (bRet && AlarmCode.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)   //获取报警代码成功，并且报警代码不是0000(有警报)
+                    {
+                        MessageBox.Show(string.Format("警告，获取到电机报警代码: {0}", AlarmCode), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        OMResetAlarm(1);
+                        // Feedback to PLC
+                    }
+
+                    strErrorMessage = string.Format("Fail to Move DamBoard to Target Position: {0} cm, ", dDistance.ToString());
+                    DisplayMessage(strErrorMessage, "ERROR");
+                    return false;
+                }
+
+                clsUtil.Dly(1.0);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 strErrorMessage = "Exception:" + ex.Message;
                 return false;
-            }
-
-            return true;
-        }
-
-        private bool MoveDamBoardDown(double dDistance, double dHome, ref string strErrorMessage)
-        {
-            strErrorMessage = "";
-
-            if (m_dCurrentDamBoardPosition == dDistance)
-            {
-                return true;
-            }
-
-            try
-            {
-                int iStep = 0;
-                iStep = (int)((dHome - dDistance) / 0.012 * 10);
-
-                if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
-                {
-                    return false;
-                }
-
-                m_dCurrentDamBoardPosition = dDistance;         
-            }
-            catch(Exception ex)
-            {
-                strErrorMessage = "Exception:" + ex.Message;
-                return false;  
             }
 
             return true;
@@ -2855,7 +3001,7 @@ namespace F002520
                 double dHome = Convert.ToDouble(clsConfigHelper.servoMotor.Home);
                 //double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
 
-                if (MoveDamBoardDown(dDistance, dHome, ref strErrorMessage) == false)
+                if (MoveDamBoard(dDistance, dHome, ref strErrorMessage) == false)
                 {
                     strErrorMessage = "Fail move dame board to near position:" + strErrorMessage;
                     return false;
@@ -2863,7 +3009,7 @@ namespace F002520
 
                 #endregion
 
-                clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
+                //clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
 
                 #region Get PSensor Calibration LOG And Compare Spec
 
@@ -2937,7 +3083,7 @@ namespace F002520
                 //double dHome = Convert.ToDouble(GetTestConfig("MOTOR", "Home"));
                 double dHome = Convert.ToDouble(clsConfigHelper.servoMotor.Home);
 
-                if (MoveDamBoardUp(dDistance, dHome, ref strErrorMessage) == false)
+                if (MoveDamBoard(dDistance, dHome, ref strErrorMessage) == false)
                 {
                     strErrorMessage = "Fail move dam board to Far position:" + strErrorMessage;
                     return false;
@@ -2945,7 +3091,7 @@ namespace F002520
 
                 #endregion
 
-                clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
+                //clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
 
                 #region Get PSensor Calibration LOG And Compare Spec
 

@@ -105,6 +105,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="OM_Modbus">
+      <HintPath>Lib\OM_Modbus.dll</HintPath>
+    </Reference>
     <Reference Include="SmartFactory.ExternalDLL">
       <HintPath>Lib\SmartFactory.ExternalDLL.dll</HintPath>
     </Reference>
@@ -217,6 +220,7 @@
     </None>
     <None Include="log4net.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <SubType>Designer</SubType>
     </None>
     <None Include="Option.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

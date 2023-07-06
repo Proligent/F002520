@@ -8,9 +8,19 @@ namespace F002520
 {
     public class clsJYDAMDAQ
     {
+        #region Variable
+
+        #endregion
+
+        #region Construct
 
 
+        #endregion
 
+        #region Function
+
+
+        #endregion
 
     }
 }

@@ -375,7 +375,7 @@ namespace F002520
                     if (bRes == false)
                     {
                         bFlag = false;
-                        strErrorMessage = "GetMDCSVariable fail.";
+                        strErrorMessage = "fail to GetMDCSVariable.";
                         clsUtil.Dly(2.0);
                         continue;
                     }
@@ -397,6 +397,7 @@ namespace F002520
                 }
                 if (bFlag == false)
                 {
+                    strErrorMessage = "Check Pre-Station Fail, " + strErrorMessage;
                     DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
@@ -666,8 +667,8 @@ namespace F002520
                     // Move to 5cm Distance to Screen
                     DisplayMessage("Motor Control.");
 
-                    m_dCurrentDamBoardPosition = 0.0;
-                    if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                    //m_dCurrentDamBoardPosition = 0.0;
+                    if (MoveDamBoard(dPosition, dHome, ref strErrorMessage) == false)
                     {
                         return false;
                     }
@@ -675,10 +676,10 @@ namespace F002520
                 else
                 { 
                     DisplayMessage("Cylinder Control.");
-
                     NISetDigital(0, 1, 1);  // DO0_1 H
                     NISetDigital(0, 2, 0);  // DO0_2 L
-                    NISetDigital(0, 3, 0);  // DO0_3 L          
+                    NISetDigital(0, 3, 0);  // DO0_3 L   
+                    clsUtil.Dly(1.0);
                 } 
             }
             catch (Exception ex)
@@ -1186,7 +1187,7 @@ namespace F002520
 
                 if (CheckNearPositionFunction(strNearPosition, PSENSOR_GET_LOG, ref strErrorMessage) == false)
                 {
-                    strErrorMessage = "Fail to Check PSensor Near Function, " + strErrorMessage;
+                    strErrorMessage = "Fail to Check PSensor Near Function !!!";
                     DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
@@ -1197,7 +1198,7 @@ namespace F002520
 
                 if (CheckFarPositionFunction(strFarPosition, PSENSOR_GET_LOG, ref strErrorMessage) == false)
                 {
-                    strErrorMessage = "Fail to Check PSensor Far Function, " + strErrorMessage;
+                    strErrorMessage = "Fail to Check PSensor Far Function !!!";
                     DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
@@ -1214,223 +1215,6 @@ namespace F002520
 
             return true;
         }
-
-        #region Obsolote
-
-        //public override bool TestAudioCalibration_OLD(ref string strErrorMessage)
-        //{
-        //    strErrorMessage = "";
-        //    string strTestItem = "";
-        //    bool bRes = false;
-        //    bool bFlag = false;
-        //    string strCmd = "";
-        //    string strResult = "";
-        //    string AudioPANameCmd = "";
-        //    string CalibrationCmd = "";
-        //    string GetMDBCmd = "";
-        //    string MAX98390L_TROOM_BEFORE = m_stUnitDeviceInfo.MAX98390L_TROOM_BEFORE;
-        //    string MAX98390L_RDC_BEFORE = m_stUnitDeviceInfo.MAX98390L_RDC_BEFORE;
-        //    string MAX98390L_TROOM_AFTER = "";
-        //    string MAX98390L_RDC_AFTER = "";
-
-        //    try
-        //    {
-        //        strTestItem = MethodBase.GetCurrentMethod().Name;
-
-        //        #region Parse XML
-
-        //        // Get Audio PA Name Cmd
-        //        AudioPANameCmd = GetTestItemParameter(strTestItem, "GetPAName");
-        //        if (string.IsNullOrWhiteSpace(AudioPANameCmd))
-        //        {
-        //            strErrorMessage = "Fail to parse GetPAName parameter !";
-        //            return false;
-        //        }
-        //        DisplayMessage("Param GetPANameCmd: " + AudioPANameCmd);
-
-        //        // Audio Calibration Cmd
-        //        CalibrationCmd = GetTestItemParameter(strTestItem, "CalibrationCmd");
-        //        if (string.IsNullOrWhiteSpace(CalibrationCmd))
-        //        {
-        //            strErrorMessage = "Fail to parse CalibrationCmd parameter !";
-        //            return false;
-        //        }
-        //        DisplayMessage("Param CalibrationCmd: " + CalibrationCmd);
-
-        //        // Get MDB Cmd
-        //        GetMDBCmd = GetTestItemParameter(strTestItem, "GetMDBCmd");
-        //        if (string.IsNullOrWhiteSpace(GetMDBCmd))
-        //        {
-        //            strErrorMessage = "Fail to parse GetMDBCmd parameter !";
-        //            return false;
-        //        }
-        //        DisplayMessage("Param GetMDBCmd: " + GetMDBCmd);
-
-        //        #endregion
-
-        //        #region Get Audio PA Name
-
-        //        DisplayMessage("Get Audio PA Name.");
-        //        bRes = clsProcess.ExcuteCmd(AudioPANameCmd, 200, ref strResult);
-        //        DisplayMessage("Send Cmd: " + AudioPANameCmd);
-        //        DisplayMessage("Audio PA Name: " + strResult);
-        //        m_stUnitDeviceInfo.AudioPAName = strResult;
-        //        frmMain.m_stTestSaveData.TestRecord.AudioPAName = strResult;
-
-        //        if (strResult.IndexOf("max98390", StringComparison.OrdinalIgnoreCase) == -1) // Not Max Audio Chip
-        //        {
-        //            DisplayMessage("Not max98390xx Audio Chip, Skip to do Audio Calibration ...");
-        //            return true;
-        //        }
-
-        //        #endregion
-
-        //        frmMain.m_stTestSaveData.TestRecord.TestAudioCalibration = "Fail";
-
-        //        #region Get MDB Value
-
-        //        DisplayMessage("Before Audio Calibration.");
-        //        DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_BEFORE);
-        //        DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_BEFORE);
-
-        //        #endregion
-
-        //        #region Turn On Display
-
-        //        DisplayMessage("Turn On Display ...");
-        //        for (int i = 0; i < 3; i++)
-        //        {
-        //            if (ScreenOnAction(ref strErrorMessage) == false)
-        //            {
-        //                strErrorMessage = "Fail to turn on display !";
-        //                bFlag = false;
-        //                clsUtil.Dly(3.0);
-        //                continue;
-        //            }
-        //            else
-        //            {
-        //                bFlag = true;
-        //                break;
-        //            }
-        //        }
-        //        if (bFlag == false)
-        //        {
-        //            DisplayMessage(strErrorMessage);
-        //            return false;
-        //        }
-
-        //        DisplayMessage("Turn On Display Successful.");
-
-        //        #endregion
-
-        //        #region Adjust the Volume to Maximum
-
-        //        DisplayMessage("Adjust the volume to Maximum.");
-        //        strCmd = "adb shell input keyevent 24";
-
-        //        for (int i = 0; i <= 13; i++)
-        //        {
-        //            DisplayMessage("Loop_" + i.ToString() + ": Raise the volume");
-        //            //DisplayMessage("Send Cmd: " + strCmd);
-        //            Logger.Info("Send Cmd: " + strCmd);
-        //            bRes = clsProcess.ExcuteCmd(strCmd, 100);
-        //            clsUtil.Dly(0.1);
-        //        }
-
-        //        #endregion
-
-        //        #region Audio Calibration
-
-        //        DisplayMessage("Start to do Audio Calibration.");
-
-        //        for (int i = 0; i < 3; i++)
-        //        {
-        //            DisplayMessage("Loop_" + i.ToString() + ": Do Audio Calibration ...");
-
-        //            bRes = clsProcess.ExcuteCmd(CalibrationCmd, 1000, ref strResult);
-        //            DisplayMessage("Send Cmd: " + CalibrationCmd);
-        //            DisplayMessage("Response: \r\n" + strResult);
-
-        //            if (strResult.IndexOf("Calibration success", StringComparison.OrdinalIgnoreCase) == -1)
-        //            {
-        //                strErrorMessage = "Fail to do Audio Calibration !!!";
-        //                bFlag = false;
-        //                clsUtil.Dly(3.0);
-        //                continue;
-        //            }
-        //            else
-        //            {
-        //                // Calibration Success
-
-
-        //                bFlag = true;
-        //                break;
-        //            }
-
-
-        //        }
-        //        if (bFlag == false)
-        //        {
-        //            DisplayMessage(strErrorMessage, "ERROR");
-        //            return false;
-        //        }
-
-        //        #endregion
-
-        //        #region Get MDB Value
-
-        //        DisplayMessage("After Audio Calibration.");
-
-        //        // MAX98390L_TROOM
-        //        strCmd = "adb shell mfg-tool -g MAX98390L_TROOM";
-        //        bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
-        //        if (string.IsNullOrWhiteSpace(strResult))
-        //        {
-        //            strErrorMessage = "Fail to get MAX98390L_TROOM value.";
-        //            return false;
-        //        }
-        //        MAX98390L_TROOM_AFTER = strResult.ToUpper();
-        //        m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
-        //        frmMain.m_stTestSaveData.TestRecord.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
-        //        DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_AFTER);
-
-        //        // MAX98390L_RDC
-        //        bRes = clsProcess.ExcuteCmd(GetMDBCmd, 200, ref strResult);
-        //        if (string.IsNullOrWhiteSpace(strResult))
-        //        {
-        //            strErrorMessage = "Fail to get MAX98390L_RDC value.";
-        //            return false;
-        //        }
-        //        MAX98390L_RDC_AFTER = strResult.ToUpper();
-        //        m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
-        //        frmMain.m_stTestSaveData.TestRecord.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
-        //        DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_AFTER);
-
-        //        #endregion
-
-        //        #region RDC Value Must Be Changed
-
-        //        if (MAX98390L_RDC_AFTER == MAX98390L_RDC_BEFORE)
-        //        {
-        //            strErrorMessage = "MAX98390L_RDC Value is Not Changed After Calibration !!!";
-        //            DisplayMessage(strErrorMessage);
-        //            return false;
-        //        }
-
-        //        #endregion
-
-        //        frmMain.m_stTestSaveData.TestRecord.TestAudioCalibration = "Pass";
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        strErrorMessage = "TestAudioCalibration Exception:" + ex.Message;
-        //        return false;
-        //    }
-
-        //    return true;
-        //}
-
-        #endregion
 
         public override bool TestAudioCalibration(ref string strErrorMessage)
         {
@@ -1828,6 +1612,8 @@ namespace F002520
             return true;
         }
 
+        #region Not Implemented
+
         //public override bool SendDataToMDCS()
         //{
         //    throw new NotImplementedException();
@@ -1837,6 +1623,8 @@ namespace F002520
         //{
         //    throw new NotImplementedException();
         //}
+
+        #endregion
 
         #endregion
 
@@ -1895,6 +1683,49 @@ namespace F002520
 
         #region Motor
 
+        private bool OMGetAlarm(byte slave, ref string strResponse, ref string strErrorMessage)
+        {
+            strResponse = "";
+            strErrorMessage = "";
+            bool bRes = false;
+
+            try
+            {
+                bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.GetAlarm(slave, ref strResponse, ref strErrorMessage);
+                if (bRes == false)
+                {
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+        
+            return true;
+        }
+
+        private bool OMResetAlarm(byte slave)
+        {
+            bool bRes = false;
+
+            try
+            {
+                bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.ResetAlarm(slave);
+                if (bRes == false)
+                {
+                    return false;
+                }
+            }
+            catch 
+            {
+                return false;
+            }
+
+            return true;
+        }
+
         private bool OMRONMoveAbsolute(byte slave, int pos, int vel, uint acceleration, uint deceleration, ref string strErrorMessage)
         {
             strErrorMessage = "";
@@ -1905,7 +1736,7 @@ namespace F002520
                 bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.MoveAbsolute(slave, pos, vel, acceleration, deceleration, ref strErrorMessage);
                 if (bRes == false)
                 {
-                    strErrorMessage = "Fail to move absolute position." + strErrorMessage;
+                    //strErrorMessage = "Fail to move absolute position." + strErrorMessage;
                     return false;
                 }
             }
@@ -1915,6 +1746,30 @@ namespace F002520
                 return false;
             }
 
+            return true;
+        }
+
+        private bool OMReadPosition(byte slave, ref int Position, ref string strErrorMessage)
+        {
+            Position = 0;
+            strErrorMessage = "";     
+            bool bRes = false;
+
+            try
+            {
+                bRes = Program.g_mainForm.m_objEquipmentInitial.m_objOMORN.ReadActualPosition(slave, ref Position, ref strErrorMessage);
+                if (bRes == false || Position == 0)
+                {
+                    //strErrorMessage = "Fail to read actual position." + strErrorMessage;
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false; 
+            }
+            
             return true;
         }
 
@@ -2761,51 +2616,221 @@ namespace F002520
             }
         }
 
-        private bool MoveDamBoardUp(double dDistance, double dHome, ref string strErrorMessage)
+        #region Obsolote
+
+        //private bool MoveDamBoardUp(double dDistance, double dHome, ref string strErrorMessage)
+        //{
+        //    strErrorMessage = "";
+        //    bool bFlag = false;
+
+        //    try
+        //    {
+        //        // Move to Position
+        //        int iStep = 0;
+        //        iStep = (int)((dHome - dDistance) / 0.012 * 10); // 这个公式是单步控制电机运动总结的
+        //        if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
+        //        {
+        //            return false;
+        //        }
+
+        //        m_dCurrentDamBoardPosition = dDistance;
+
+        //        // Check Position
+        //        int iPosition = 0;
+        //        int iRange = 10;
+        //        TimeSpan duration = TimeSpan.FromSeconds(8);
+        //        DateTime startTime = DateTime.Now;
+        //        while((DateTime.Now - startTime) < duration)
+        //        {
+        //            if (OMReadPosition(1, ref iPosition, ref strErrorMessage) == false) // Read Position
+        //            {
+        //                bFlag = false;
+        //                clsUtil.Dly(1.0);
+        //                continue;
+        //            }
+        //            if (Math.Abs(iPosition - iStep) < iRange)
+        //            {
+        //                bFlag = true;
+        //                break;
+        //            }
+        //            else
+        //            {
+        //                bFlag = false;
+        //                clsUtil.Dly(1.0);
+        //                continue;
+        //            }
+        //        }
+        //        if (bFlag == false)
+        //        {     
+        //            // Get Alarm
+        //            string AlarmCode = "";
+        //            bool bRet = OMGetAlarm(1, ref AlarmCode, ref strErrorMessage);
+        //            if (bRet && AlarmCode.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)   //获取报警代码成功，并且报警代码不是0000(有警报)
+        //            {
+        //                MessageBox.Show(string.Format("警告，获取到电机报警代码: {0}", AlarmCode), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //                OMResetAlarm(1);
+        //            }
+
+        //            strErrorMessage = string.Format("Fail to Move DamBoard to Target Position: {0} cm, ", dDistance.ToString());
+        //            DisplayMessage(strErrorMessage, "ERROR");
+        //            return false;
+        //        }
+
+        //        clsUtil.Dly(1.0);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        strErrorMessage = "Exception:" + ex.Message;
+        //        return false;
+        //    }
+
+        //    return true;
+        //}
+   
+        //private bool MoveDamBoardDown(double dDistance, double dHome, ref string strErrorMessage)
+        //{
+        //    strErrorMessage = "";
+        //    bool bFlag = false;
+
+        //    if (m_dCurrentDamBoardPosition == dDistance)
+        //    {
+        //        return true;
+        //    }
+
+        //    try
+        //    {
+        //        // Move to Position
+        //        int iStep = 0;
+        //        iStep = (int)((dHome - dDistance) / 0.012 * 10);
+        //        if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
+        //        {
+        //            return false;
+        //        }
+
+        //        m_dCurrentDamBoardPosition = dDistance;
+
+        //        // Check Position
+        //        int iPosition = 0;
+        //        int iRange = 10;
+        //        TimeSpan duration = TimeSpan.FromSeconds(8);
+        //        DateTime startTime = DateTime.Now;
+        //        while ((DateTime.Now - startTime) < duration)
+        //        {
+        //            if (OMReadPosition(1, ref iPosition, ref strErrorMessage) == false) // Read Position
+        //            {
+        //                bFlag = false;
+        //                clsUtil.Dly(1.0);
+        //                continue;
+        //            }
+        //            if (Math.Abs(iPosition - iStep) < iRange)
+        //            {
+        //                bFlag = true;
+        //                break;
+        //            }
+        //            else
+        //            {
+        //                bFlag = false;
+        //                clsUtil.Dly(1.0);
+        //                continue;
+        //            }
+        //        }
+        //        if (bFlag == false)
+        //        {
+        //            // Get Alarm
+        //            string AlarmCode = "";
+        //            bool bRet = OMGetAlarm(1, ref AlarmCode, ref strErrorMessage);
+        //            if (bRet && AlarmCode.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)   //获取报警代码成功，并且报警代码不是0000(有警报)
+        //            {
+        //                MessageBox.Show(string.Format("警告，获取到电机报警代码: {0}", AlarmCode), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        //                OMResetAlarm(1);
+        //            }
+
+        //            strErrorMessage = string.Format("Fail to Move DamBoard to Target Position: {0} cm, ", dDistance.ToString());
+        //            DisplayMessage(strErrorMessage, "ERROR");
+        //            return false;
+        //        }
+
+        //        clsUtil.Dly(1.0);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        strErrorMessage = "Exception:" + ex.Message;
+        //        return false;
+        //    }
+
+        //    return true;
+        //}
+
+        #endregion
+
+        private bool MoveDamBoard(double dDistance, double dHome, ref string strErrorMessage)
         {
             strErrorMessage = "";
+            bool bFlag = false;
 
             try
             {
+                // Check Current Position
+                if (m_dCurrentDamBoardPosition == dDistance)
+                {
+                    DisplayMessage("The DamBoard Already at The Position !!!");
+                    return true;
+                }
+
+                // Move to Position
                 int iStep = 0;
                 iStep = (int)((dHome - dDistance) / 0.012 * 10);
-
                 if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
                 {
                     return false;
                 }
 
                 m_dCurrentDamBoardPosition = dDistance;
-            }
-            catch (Exception ex)
-            {
-                strErrorMessage = "Exception:" + ex.Message;
-                return false;
-            }
 
-            return true;
-        }
-
-        private bool MoveDamBoardDown(double dDistance, double dHome, ref string strErrorMessage)
-        {
-            strErrorMessage = "";
-
-            if (m_dCurrentDamBoardPosition == dDistance)
-            {
-                return true;
-            }
-
-            try
-            {
-                int iStep = 0;
-                iStep = (int)((dHome - dDistance) / 0.012 * 10);
-
-                if (OMRONMoveAbsolute(1, iStep, 14000, 40000, 40000, ref strErrorMessage) == false)
+                // Check Position
+                int iRange = 5;
+                int iPosition = 0;
+                TimeSpan duration = TimeSpan.FromSeconds(8);
+                DateTime startTime = DateTime.Now;
+                while ((DateTime.Now - startTime) < duration)
                 {
+                    if (OMReadPosition(1, ref iPosition, ref strErrorMessage) == false) // Read Position
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                    if (Math.Abs(iPosition - iStep) < iRange)
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                    else
+                    {
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    // Get Alarm
+                    string AlarmCode = "";
+                    bool bRet = OMGetAlarm(1, ref AlarmCode, ref strErrorMessage);
+                    if (bRet && AlarmCode.IndexOf("0000H", StringComparison.OrdinalIgnoreCase) == -1)   //获取报警代码成功，并且报警代码不是0000(有警报)
+                    {
+                        MessageBox.Show(string.Format("警告，获取到电机报警代码: {0}", AlarmCode), "警告", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        OMResetAlarm(1);
+                        // Feedback to PLC
+
+                    }
+
+                    strErrorMessage = string.Format("Fail to Move DamBoard to Target Position: {0} cm, ", dDistance.ToString());
+                    DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
 
-                m_dCurrentDamBoardPosition = dDistance;
+                clsUtil.Dly(1.0);
             }
             catch (Exception ex)
             {
@@ -3032,7 +3057,7 @@ namespace F002520
                 {
                     // Move DamBoard to 15cm Distance to Screen
                     DisplayMessage("DamBoard Motor Control.");
-                    if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                    if (MoveDamBoard(dPosition, dHome, ref strErrorMessage) == false)
                     {
                         strErrorMessage = "Fail move dam board to Far position:" + strErrorMessage;
                         return false;
@@ -3043,13 +3068,14 @@ namespace F002520
                     DisplayMessage("DamBoard Cylinder Control.");
                     NISetDigital(0, 1, 0);  // DO0_1 L
                     NISetDigital(0, 2, 0);  // DO0_2 L
-                    NISetDigital(0, 3, 0);  // DO0_3 L    
+                    NISetDigital(0, 3, 0);  // DO0_3 L   
+                    clsUtil.Dly(1.0);
                 }
 
                 #endregion
 
-                DisplayMessage("Add delay to make sure the dam board reach position.");
-                clsUtil.Dly(3.0);
+                //DisplayMessage("Add delay to make sure the dam board reach position.");
+                //clsUtil.Dly(3.0);
 
                 #region Execute Calibration
 
@@ -3107,9 +3133,9 @@ namespace F002520
 
                 if (clsConfigHelper.servoMotor.Enable == true)
                 {
-                    // Move DamBoard to 5cm Distance to Screen
+                    // Move DamBoard to 3cm Distance to Screen
                     DisplayMessage("DamBoard Motor Control.");
-                    if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                    if (MoveDamBoard(dPosition, dHome, ref strErrorMessage) == false)
                     {
                         strErrorMessage = "Fail move dam board to Far position:" + strErrorMessage;
                         return false;
@@ -3120,13 +3146,14 @@ namespace F002520
                     DisplayMessage("DamBoard Cylinder Control.");
                     NISetDigital(0, 1, 1);  // DO0_1 H
                     NISetDigital(0, 2, 0);  // DO0_2 L
-                    NISetDigital(0, 3, 0);  // DO0_3 L    
+                    NISetDigital(0, 3, 0);  // DO0_3 L   
+                    clsUtil.Dly(1.0);
                 }
 
                 #endregion
 
-                DisplayMessage("Add delay to make sure the dam board reach position.");
-                clsUtil.Dly(3.0);
+                //DisplayMessage("Add delay to make sure the dam board reach position.");
+                //clsUtil.Dly(3.0);
 
                 #region Execute Calibration
 
@@ -3200,7 +3227,7 @@ namespace F002520
                 {
                     // Move DamBoard to 2.5cm Distance to Screen
                     DisplayMessage("DamBoard Motor Control.");
-                    if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                    if (MoveDamBoard(dPosition, dHome, ref strErrorMessage) == false)
                     {
                         strErrorMessage = "Fail move dam board to Near-position:" + strErrorMessage;
                         return false;
@@ -3211,12 +3238,13 @@ namespace F002520
                     DisplayMessage("DamBoard Cylinder Control.");
                     NISetDigital(0, 1, 1);  // DO0_1 H
                     NISetDigital(0, 2, 0);  // DO0_2 L
-                    NISetDigital(0, 3, 1);  // DO0_3 H   
+                    NISetDigital(0, 3, 1);  // DO0_3 H 
+                    clsUtil.Dly(1.0);
                 }
 
                 #endregion
 
-                clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
+                //clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
 
                 #region Get PSensor Calibration LOG And Compare Spec
 
@@ -3293,7 +3321,7 @@ namespace F002520
                 {
                     // Move DamBoard to 15cm Distance to Screen
                     DisplayMessage("DamBoard Motor Control.");
-                    if (MoveDamBoardUp(dPosition, dHome, ref strErrorMessage) == false)
+                    if (MoveDamBoard(dPosition, dHome, ref strErrorMessage) == false)
                     {
                         strErrorMessage = "Fail move dam board to Near-position:" + strErrorMessage;
                         return false;
@@ -3305,11 +3333,12 @@ namespace F002520
                     NISetDigital(0, 1, 0);  // DO0_1 L
                     NISetDigital(0, 2, 1);  // DO0_2 H
                     NISetDigital(0, 3, 0);  // DO0_3 L   
+                    clsUtil.Dly(1.0);  
                 }
 
                 #endregion
 
-                clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
+                //clsUtil.Dly(3.0);   // Add delay to make sure the dame board go to the position
 
                 #region Get PSensor Calibration LOG And Compare Spec
 

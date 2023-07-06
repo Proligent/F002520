@@ -103,7 +103,7 @@
       <!--Reboot | APK-->
       <Mode>Reboot</Mode>
       <ApkCmd>adb shell am start -n com.honeywell.testing/.BITActivity</ApkCmd>
-      <DealySec>5.0</DealySec>
+      <DelaySec>5.0</DelaySec>
     </TestReboot>
 
     <TestEnd>
