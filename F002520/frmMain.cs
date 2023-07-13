@@ -24,13 +24,13 @@ namespace F002520
 
         #region Struct
 
-        private struct MCFData
+        public struct MCFData
         {
             public string SKU;
             public string Model;   
         }
 
-        private struct MESData
+        public struct MESData
         {
             public string EID;
             public string WorkOrder;
@@ -61,18 +61,19 @@ namespace F002520
         private bool m_bStop = false;
         //private bool m_bRunInitialized = false;
         public static bool m_bMESEnable = false;
-
-        private ModelID m_Type;
+        public static bool m_bUploadMES = false;
+   
         public static string m_strSN = "";
         public static string m_strSKU = "";
         public static string m_strModel = "";    
         public static string m_strTestItemXMLFile = "";
         public static string m_strEquipmentXMLFile = "";
 
-        private MCFData m_stMCFData = new MCFData();
-        private MESData m_stMESData = new MESData();
-        private List<string> m_TestItemList = new List<string>();  
+        private ModelID m_Type = ModelID.NULL;
+        public static MCFData m_stMCFData = new MCFData();
+        public static MESData m_stMESData = new MESData();
         public static OptionData m_stOptionData = new OptionData();
+        private List<string> m_TestItemList = new List<string>();  
         public clsEquipmentInitial m_objEquipmentInitial = new clsEquipmentInitial();
 
         // PLC
@@ -81,7 +82,7 @@ namespace F002520
         private string sResultPlcThread = "";
         private int iWatchDog = 0;
         private bool isManual = false;
-        private bool isTestRunning = false;     // true:测试中  false:空闲
+        private bool isTestRunning = false;     // true: 测试中  false: 空闲
         private bool isPLCConnected = false;    // 是否有PLC连接
         private bool bPLCThreadRun = false;     // PLC Timer Thread Run ?
 
@@ -112,6 +113,7 @@ namespace F002520
             isTestRunning = false;
             isPLCConnected = false;
 
+            // Title
             this.lblTitleBar.Text = Program.g_strToolNumber + " Sensor Calibration Fixture";
        
             // Init Log
@@ -827,9 +829,7 @@ namespace F002520
 
         private void InitObject()
         {
-           
-            
-
+                    
         }
 
         private bool ReadOptionFile(ref string strErrorMessage)
@@ -1063,6 +1063,8 @@ namespace F002520
                             DisplayMessage("Failed to Check MES Data.");
                             return false;
                         }
+                        frmMain.m_bMESEnable = true;
+                        frmMain.m_bUploadMES = true;
                     }
                   
                     // MCF
@@ -1072,7 +1074,7 @@ namespace F002520
                         DisplayMessage("Failed to Scan Sheet.");
                         return false;
                     }
-                    DisplayMessage("Model:" + m_strModel);
+                    DisplayMessage("Model:" + m_stMCFData.Model);
                     DisplayMessage("SKU:" + m_stMCFData.SKU);
                 }
                 else
@@ -1266,8 +1268,10 @@ namespace F002520
             //    DisplayMessage("Init Log4net Fail.");
             //    return false;
             //}
+
             m_bStop = false;
             m_bMESEnable = false;
+            m_bUploadMES = false;
 
             ClearTestLog();
             InitMDCSVariable();
@@ -1337,7 +1341,7 @@ namespace F002520
                         {
                             bTestFail = true;          
                             m_stTestSaveData.TestResult.TestFailMessage = (string)parameters[0]; // (string)parameters[0] 和 strErrorMessage 一致
-                            DisplayMessage(string.Format("{0} Test Fail, FailMessage:{1}", strTestItem, strErrorMessage));
+                            DisplayMessage(string.Format("{0} Test Fail, FailMessage:{1}", strTestItem, m_stTestSaveData.TestResult.TestFailMessage), "ERROR");
                             DisplayMessage("SubtestIterate FAIL.");
                             break;
                         }
@@ -1364,6 +1368,8 @@ namespace F002520
                     m_stTestSaveData.TestResult.TestPassed = true;
                     m_stTestSaveData.TestResult.TestFailMessage = "";          
                 }
+
+                DisplayMessage("SubTestItem Finished !!!" + "\r\n");
 
                 #endregion
 
@@ -1406,7 +1412,6 @@ namespace F002520
                             }
                         }
                     }
-                    //clsUtil.Dly(1.0);
                 }
 
                 #endregion
@@ -1445,7 +1450,7 @@ namespace F002520
                 if (bSaveData == true)  
                 {
                     // MES
-                    if (m_bMESEnable == true)
+                    if (m_bMESEnable == true && m_bUploadMES == true)
                     {
                         DisplayMessage("Upload to MES ...");
                         if (UploadToMES(ref strErrorMessage) == false)
@@ -1733,7 +1738,7 @@ namespace F002520
                         DisplayMessage("Init OMORN Motor.");
                         if (m_objEquipmentInitial.InitOMORNMotor(ref strErrorMessage) == false)
                         {
-                            strErrorMessage = "Init OMORN Motor Fail !!!" + strErrorMessage;
+                            strErrorMessage = "Init OMORN Motor Fail !," + strErrorMessage;
                             return false;        
                         }
                     }

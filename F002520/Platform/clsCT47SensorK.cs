@@ -1885,10 +1885,15 @@ namespace F002520
 
         private void InitNIPort()
         {
+            // Must Init
             NISetDigital(0, 0, 0);  // DO0_0 L
             NISetDigital(0, 1, 0);  // DO0_1 L
             NISetDigital(0, 2, 0);  // DO0_2 L
             NISetDigital(0, 3, 0);  // DO0_3 L
+            NISetDigital(0, 4, 0);  // DO0_4 L
+            NISetDigital(0, 5, 0);  // DO0_5 L
+            NISetDigital(0, 6, 0);  // DO0_6 L
+            NISetDigital(0, 7, 0);  // DO0_7 L
         }
 
         private void Reconnect()
@@ -2275,6 +2280,14 @@ namespace F002520
                     strErrorMessage = "Read mfg data fail: Invalid SKU.";
                     return false;
                 }
+                if (frmMain.m_stOptionData.AutoChangeOver == "0")   // Manual Input
+                {
+                    if (strSKU.ToUpper() != frmMain.m_stMCFData.SKU.ToUpper())
+                    {
+                        strErrorMessage = string.Format("The input SKU:{0} is not matched with devices SKU:{1}", frmMain.m_stMCFData.SKU, strSKU);
+                        return false;
+                    }
+                }     
                 // Truncate Model
                 int index = strSKU.IndexOf("-");
                 string skuModel = strSKU.Substring(0, index).Trim();

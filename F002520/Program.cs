@@ -9,8 +9,8 @@ namespace F002520
     /****************************************************************************************
      *  
      *  History Log:
-     *  REV     AUTHOR      DATE            COMMENTS
-     *  A       CalvinXie   2023/03/15      First Version.
+     *  REV           AUTHOR           DATE            COMMENTS
+     *  01.01       CalvinXie       2023/03/15       First Version.
      *  
      *  
      ****************************************************************************************/

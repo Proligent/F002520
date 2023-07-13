@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace F002520
 {
-    class clsNI6001
+    public class clsNI6001
     {
         #region Structs
 

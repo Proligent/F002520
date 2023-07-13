@@ -16,27 +16,23 @@ namespace F002520
     public class clsEquipmentInitial
     {
         // DAQ
-        public clsNI6251 m_objNIDAQ = new clsNI6251();
+        public clsNI6251 m_objNIDAQ = new clsNI6251();  // CT47 NPI Line
+        //public clsNI6001 m_objNIDAQ = new clsNI6001(); 
         public clsJYDAMDAQ m_objJYDAMDAQ = new clsJYDAMDAQ();
 
         // OMORN Motor
-        //private modbus_hon.ModbusOp.serialSettings m_modbusSetting = new modbus_hon.ModbusOp.serialSettings();
-        //public modbus_hon.ModbusOp m_objOMORN = new modbus_hon.ModbusOp(OMLib.PRODUCT.AR);
-
         private OM_Modbus.OMModbus.SerialSetting m_modbusSetting = new OM_Modbus.OMModbus.SerialSetting();
         public OM_Modbus.OMModbus m_objOMORN = new OM_Modbus.OMModbus(OMLib.PRODUCT.AR);
-
         // Panasonic Motor
-
 
         #region Construct
 
         public clsEquipmentInitial()
         { 
+
         }
 
         #endregion
-
 
         #region 
 
@@ -54,7 +50,6 @@ namespace F002520
         }
 
         #endregion
-
 
         #region HardWare Initial
 
@@ -103,6 +98,7 @@ namespace F002520
             string strResponse = ""; 
             if (m_objOMORN.GetAlarm(1, ref strResponse, ref strErrorMessage) == false)
             {
+                strErrorMessage = "Fail to Get Alarm: " + strErrorMessage;
                 return false;
             }
             else
@@ -195,10 +191,10 @@ namespace F002520
                         return false;
                     }
                    
-
                     #region Obsolote
 
                     clsUtil.Dly(2.0);
+
                     // 影响测试时间， 开个线程去检查
                     // Check Position
                     //int iRange = 10;    // Compare to Zero position

@@ -135,6 +135,7 @@
     <Compile Include="Common\clsIPMAC.cs" />
     <Compile Include="Common\clsJYDAMDAQ.cs" />
     <Compile Include="Common\clsMDCS.cs" />
+    <Compile Include="Common\clsMINASA6.cs" />
     <Compile Include="Common\clsNI6001.cs" />
     <Compile Include="Common\clsNI6251.cs" />
     <Compile Include="Common\clsPLCDaveHelper.cs" />
@@ -238,6 +239,7 @@
   <ItemGroup>
     <None Include="App.config">
       <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
   <ItemGroup />

@@ -255,9 +255,7 @@ namespace F002520
 
             try
             { 
-            
-
-
+           
             }
             catch(Exception ex)
             {
@@ -399,7 +397,7 @@ namespace F002520
                 if (bFlag == false)
                 {
                     strErrorMessage = "Check Pre-Station Fail(检查前一站结果失败), " + strErrorMessage;
-                    DisplayMessage(strErrorMessage, "ERROR");
+                    //DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
 
@@ -420,13 +418,11 @@ namespace F002520
         {
             strErrorMessage = "";
             bool bRes = false;
-            bool bFlag = false;
-            //bool MES_Enable = false;
+            bool bFlag = false;    
             string strCmd = "";
             string strEID = "";
             string strWorkOrder = "";
             string strTestItem = "";        
-            //string OptionMES_Enable = Program.g_mainForm.m_stOptionData.MES_Enable;   
             string OptionMES_Enable = frmMain.m_stOptionData.MES_Enable;   
             string XmlMES_Enable = "";
             string MESStationName = ""; 
@@ -560,6 +556,7 @@ namespace F002520
                         return false;
                     }
 
+                    frmMain.m_bUploadMES = true;
                     DisplayMessage("Check MES Data Successful.");
                 }
                 else
@@ -570,6 +567,8 @@ namespace F002520
                 #endregion
 
                 #region Get ScanSheet
+
+                // 读取scansheet内容(SKU)和 读取的产品MDB的SKU进行比较
 
 
                 #endregion
@@ -1354,58 +1353,134 @@ namespace F002520
                 {
                     DisplayMessage("Loop_" + i.ToString() + ": Raise the volume");
                     DisplayMessage("Send Cmd: " + strCmd);
-                    bRes = clsProcess.ExcuteCmd(strCmd, 200);
-                    clsUtil.Dly(0.2);
+                    bRes = clsProcess.ExcuteCmd(strCmd, 100);
+                    clsUtil.Dly(0.1);
                 }
 
                 #endregion
 
                 #region Audio Calibration
 
-                DisplayMessage("Start to do Audio Calibration.");
-                bRes = clsProcess.ExcuteCmd(CalibrationCmd, 2000, ref strResult);
-
-                DisplayMessage("Send Cmd: " + CalibrationCmd);
-                DisplayMessage("Response: " + strResult);
+                //DisplayMessage("Start to do Audio Calibration.");
+                //bRes = clsProcess.ExcuteCmd(CalibrationCmd, 1000, ref strResult);
+                //DisplayMessage("Send Cmd: " + CalibrationCmd);
+                //DisplayMessage("Response: " + strResult);
 
                 #endregion
 
                 #region Get MDB Value
 
-                DisplayMessage("After Audio Calibration.");
+                //DisplayMessage("After Audio Calibration.");
 
-                // MAX98390L_TROOM
-                strCmd = "adb shell mfg-tool -g MAX98390L_TROOM";
-                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
-                if (string.IsNullOrWhiteSpace(strResult))
-                {
-                    strErrorMessage = "Fail to get MAX98390L_TROOM value.";
-                    return false;    
-                }
-                MAX98390L_TROOM_AFTER = strResult.ToUpper();
-                m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
-                frmMain.m_stTestSaveData.TestRecord.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
-                DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_AFTER);
+                //// MAX98390L_TROOM
+                //strCmd = "adb shell mfg-tool -g MAX98390L_TROOM";
+                //bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+                //if (string.IsNullOrWhiteSpace(strResult))
+                //{
+                //    strErrorMessage = "Fail to get MAX98390L_TROOM value.";
+                //    return false;    
+                //}
+                //MAX98390L_TROOM_AFTER = strResult.ToUpper();
+                //m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
+                //frmMain.m_stTestSaveData.TestRecord.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
+                //DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_AFTER);
 
-                // MAX98390L_RDC
-                bRes = clsProcess.ExcuteCmd(GetMDBCmd, 200, ref strResult);
-                if (string.IsNullOrWhiteSpace(strResult))
-                {
-                    strErrorMessage = "Fail to get MAX98390L_RDC value.";
-                    return false;
-                }
-                MAX98390L_RDC_AFTER = strResult.ToUpper();
-                m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
-                frmMain.m_stTestSaveData.TestRecord.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
-                DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_AFTER);
+                //// MAX98390L_RDC
+                //bRes = clsProcess.ExcuteCmd(GetMDBCmd, 200, ref strResult);
+                //if (string.IsNullOrWhiteSpace(strResult))
+                //{
+                //    strErrorMessage = "Fail to get MAX98390L_RDC value.";
+                //    return false;
+                //}
+                //MAX98390L_RDC_AFTER = strResult.ToUpper();
+                //m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
+                //frmMain.m_stTestSaveData.TestRecord.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
+                //DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_AFTER);
 
                 #endregion
 
                 #region RDC Value Must Be Changed
 
-                if (MAX98390L_RDC_AFTER == MAX98390L_RDC_BEFORE)
+                //if (MAX98390L_RDC_AFTER == MAX98390L_RDC_BEFORE)
+                //{
+                //    strErrorMessage = "MAX98390L_RDC value is not changed before and after calibration !!!";
+                //    DisplayMessage(strErrorMessage, "ERROR");
+                //    return false;
+                //}
+
+                #endregion
+
+
+                #region Audio Calibration
+
+                DisplayMessage("Start to do Audio Calibration.");
+
+                for (int i = 0; i < 3; i++)
                 {
-                    DisplayMessage("MAX98390L_RDC value is not changed before and after calibration !!!");
+                    #region Audio Calibration
+
+                    DisplayMessage("Loop_" + i.ToString() + ": Do Audio Calibration ...");
+                    bRes = clsProcess.ExcuteCmd(CalibrationCmd, 1000, ref strResult);
+                    DisplayMessage("Send Cmd: " + CalibrationCmd);
+                    DisplayMessage("Response: \r\n" + strResult);
+
+                    #endregion
+             
+                    #region Get MDB Value
+
+                    DisplayMessage("After Audio Calibration.");
+
+                    // MAX98390L_TROOM
+                    strCmd = "adb shell mfg-tool -g MAX98390L_TROOM";
+                    bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+                    if (string.IsNullOrWhiteSpace(strResult))
+                    {
+                        strErrorMessage = "Fail to get MAX98390L_TROOM value.";
+                        clsUtil.Dly(1.0);
+                        bFlag = false;
+                        continue;     
+                    }
+                    MAX98390L_TROOM_AFTER = strResult.ToUpper();
+                    m_stUnitDeviceInfo.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
+                    frmMain.m_stTestSaveData.TestRecord.MAX98390L_TROOM_AFTER = MAX98390L_TROOM_AFTER;
+                    DisplayMessage("MAX98390L_TROOM = " + MAX98390L_TROOM_AFTER);
+
+                    // MAX98390L_RDC
+                    bRes = clsProcess.ExcuteCmd(GetMDBCmd, 200, ref strResult);
+                    if (string.IsNullOrWhiteSpace(strResult))
+                    {
+                        strErrorMessage = "Fail to get MAX98390L_RDC value.";
+                        clsUtil.Dly(1.0);
+                        bFlag = false;
+                        continue; 
+                    }
+                    MAX98390L_RDC_AFTER = strResult.ToUpper();
+                    m_stUnitDeviceInfo.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
+                    frmMain.m_stTestSaveData.TestRecord.MAX98390L_RDC_AFTER = MAX98390L_RDC_AFTER;
+                    DisplayMessage("MAX98390L_RDC = " + MAX98390L_RDC_AFTER);
+
+                    #endregion
+
+                    #region RDC Value Must Be Changed
+
+                    if (MAX98390L_RDC_AFTER == MAX98390L_RDC_BEFORE)
+                    {
+                        strErrorMessage = "MAX98390L_RDC Value is Not Changed After Calibration !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+
+                    #endregion
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage, "ERROR");
                     return false;
                 }
 
@@ -1427,6 +1502,7 @@ namespace F002520
             strErrorMessage = "";
             string strTestItem = "";
             bool bRes = false;
+            bool bFlag = false;
             string strCmd = "";
             string strResult = "";
             string OFFSETVALUE = "";
@@ -1438,7 +1514,7 @@ namespace F002520
                 #region Parse XML
 
                 // Offset Value
-                OFFSETVALUE = GetTestItemParameter(strTestItem, "OffsetValue");
+                OFFSETVALUE = GetTestItemParameter(strTestItem, "OffsetValue").Trim();
                 if (string.IsNullOrWhiteSpace(OFFSETVALUE))
                 {
                     strErrorMessage = "Fail to parse OFFSETVALUE parameter !";
@@ -1488,16 +1564,32 @@ namespace F002520
 
                 DisplayMessage("Check Offset Value.");
                 strCmd = "adb shell su 0 cat /mnt/vendor/persist/sensors/registry/registry/icp201xx_0_platform.pressure.fac_cal.bias";
-                DisplayMessage("Send Cmd:" + strCmd);
-                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
-
-                if (strResult.Contains(OFFSETVALUE) == false)
+                
+                for (int i = 0; i < 5; i++)
                 {
-                    strErrorMessage = "Failed to check offset value !!!";
+                    DisplayMessage(string.Format("LOOP_{0}, Send Cmd: {1}", i.ToString(), strCmd)); 
+                    bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strResult);
+
+                    DisplayMessage("Response: " + strResult);
+                    if (strResult.IndexOf(OFFSETVALUE, StringComparison.OrdinalIgnoreCase) == -1)
+                    {
+                        strErrorMessage = "Failed to check offset value !!!";
+                        bFlag = false;   
+                        clsUtil.Dly(2.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
                     return false;
                 }
-                DisplayMessage("Write Offset Value Success.");
 
+                DisplayMessage("Write Offset Value Success.");
                 m_stUnitDeviceInfo.OFFSET_VALUE = OFFSETVALUE;
                 frmMain.m_stTestSaveData.TestRecord.BarometerOffsetValue = OFFSETVALUE;
                 frmMain.m_stTestSaveData.TestRecord.TestBarometerCalibration = "Pass";
@@ -1593,43 +1685,10 @@ namespace F002520
         public override bool TestEnd(ref string strErrorMessage)
         {
             strErrorMessage = "";
-            //bool bFlag = false;
-            //double dValue_AI0 = 0.0;
-            //double dValue_AI1 = 0.0;
-
+           
             try
             {
-                #region Eject USB Pogopin
-    
-                //DisplayMessage("Eject USB Pogopin");
-                //NISetDigital(0, 0, 0);  // DO0_0 L
-                //NISetDigital(0, 1, 1);  // DO0_1 H
-                //clsUtil.Dly(0.5);
- 
-                //for (int i = 0; i < 5; i++)
-                //{
-                //    dValue_AI0 = NIGetAnalog(0);    // AI0 > 3.0 V
-                //    dValue_AI1 = NIGetAnalog(1);    // AI1 < 2.0 V
-                //    if (dValue_AI0 > 3.0 && dValue_AI1 < 2.0)
-                //    {
-                //        bFlag = true;
-                //        break;
-                //    }
-                //    else
-                //    {
-                //        bFlag = false;
-                //        clsUtil.Dly(1.0);
-                //        continue;
-                //    }
-                //}
-                //if (bFlag == false)
-                //{
-                //    strErrorMessage = "Fail to Eject USB Pogopin !";
-                //    return false;
-                //}
-
-                #endregion    
-   
+           
 
             }
             catch (Exception ex)
@@ -1698,7 +1757,6 @@ namespace F002520
 
             return strValue;
         }
-
 
         #endregion
 
@@ -1939,10 +1997,15 @@ namespace F002520
 
         private void InitNIPort()
         {
+            // Must Init
             NISetDigital(0, 0, 0);  // DO0_0 L
-            NISetDigital(0, 1, 0);  // DO0_1 L
-            //NISetDigital(0, 2, 0);  // DO0_2 L
-            //NISetDigital(0, 3, 0);  // DO0_3 L
+            NISetDigital(0, 1, 0);  // DO0_1 L       
+            NISetDigital(0, 2, 0);  // DO0_2 L
+            NISetDigital(0, 3, 0);  // DO0_3 L
+            NISetDigital(0, 4, 0);  // DO0_4 L
+            NISetDigital(0, 5, 0);  // DO0_5 L
+            NISetDigital(0, 6, 0);  // DO0_6 L
+            NISetDigital(0, 7, 0);  // DO0_7 L
         }
 
         private void Reconnect()
@@ -2331,10 +2394,17 @@ namespace F002520
                     strErrorMessage = "Read mfg data fail: Invalid SKU.";
                     return false;
                 }
+                if (frmMain.m_stOptionData.AutoChangeOver == "0")   // Manual Input
+                {
+                    if (strSKU.ToUpper() != frmMain.m_stMCFData.SKU.ToUpper())
+                    {
+                        strErrorMessage = string.Format("The input SKU:{0} is not matched with devices SKU:{1}", frmMain.m_stMCFData.SKU, strSKU);
+                        return false;
+                    }         
+                }           
                 // Truncate Model
                 int index = strSKU.IndexOf("-");
                 string skuModel = strSKU.Substring(0, index).Trim();
-
                 // MODEL
                 string strModel = m_stUnitDeviceInfo.Model;
                 if (string.IsNullOrWhiteSpace(strModel))
