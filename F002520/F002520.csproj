@@ -101,14 +101,15 @@
     <Reference Include="NationalInstruments.NI4882">
       <HintPath>Lib\NationalInstruments.NI4882.dll</HintPath>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="OM_Modbus">
       <HintPath>Lib\OM_Modbus.dll</HintPath>
     </Reference>
-    <Reference Include="SmartFactory.ExternalDLL">
+    <Reference Include="SmartFactory.ExternalDLL, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>Lib\SmartFactory.ExternalDLL.dll</HintPath>
     </Reference>
     <Reference Include="System" />

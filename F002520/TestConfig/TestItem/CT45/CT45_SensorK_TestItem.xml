@@ -53,7 +53,7 @@
 
     <TestAutoChangeOver>
       <ScanSheetStation>SC</ScanSheetStation>
-      <SWVersionControl>FALSE</SWVersionControl>
+      <SWVersionControl>TRUE</SWVersionControl>
     </TestAutoChangeOver>
 
     <TestScreenOff>

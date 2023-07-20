@@ -154,12 +154,27 @@ namespace F002520
 
                 string strSN = "";
                 string strCmd = "adb shell su 0 mfg-tool -g EX_SERIAL_NUMBER";
-            
-                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strSN);
-                DisplayMessage("Device SN: " + strSN);
-                if(strSN.Length != 10)
+                for (int i = 0; i < 5; i++)
                 {
-                    strErrorMessage = "Fail to Get SN !";
+                    bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strSN);
+                    DisplayMessage("Device SN: " + strSN);
+
+                    if (strSN.Length != 10)
+                    {
+                        strErrorMessage = "Fail to Get SN !";
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage);
                     return false;
                 }
 
@@ -193,7 +208,7 @@ namespace F002520
             {
                 #region Read MFG Data
 
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     if (ReadMFGData(ref strErrorMessage) == false)
                     {
@@ -476,7 +491,7 @@ namespace F002520
                     DisplayMessage("Get WorkOrder Property.");
                     strCmd = "adb shell getprop persist.sys.WorkOrder";
 
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < 5; i++)
                     {
                         bRes = clsProcess.ExcuteCmd(strCmd, 500, ref strWorkOrder);     
                         if (bRes && !string.IsNullOrWhiteSpace(strWorkOrder))
@@ -514,7 +529,7 @@ namespace F002520
                     DisplayMessage("Get EID Property.");
                     strCmd = "adb shell getprop persist.sys.FLASH";
 
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < 5; i++)
                     {
                         bRes = clsProcess.ExcuteCmd(strCmd, 500, ref strEID);  
                         if (bRes && !string.IsNullOrWhiteSpace(strEID))
@@ -568,9 +583,28 @@ namespace F002520
 
                 #region Get ScanSheet
 
-                // 读取scansheet内容(SKU)和 读取的产品MDB的SKU进行比较
+                if (SWVersionControl == "TRUE")
+                {
+                    // 获取scansheet的SKU 和 读取产品MDB的SKU进行比较, 是否一致。
+                    DisplayMessage("Get ScanSheet.");
+                    string strSKU = "";
+                    if (GetScanSheet(ScanSheetStationName, ref strSKU, ref strErrorMessage) == false)
+                    {
+                        strErrorMessage = "Get ScanSheet fail: " + strErrorMessage;
+                        DisplayMessage(strErrorMessage, "ERROR");
+                        return false;
+                    }
+                    DisplayMessage("ScanSheet SKU: " + strSKU);
 
-
+                    // Check
+                    if (strSKU.ToUpper() != m_stUnitDeviceInfo.SKU.ToUpper())
+                    {
+                        strErrorMessage = "Get ScanSheet SKU is Not Matched With Device SKU !!!";
+                        DisplayMessage(strErrorMessage);
+                        return false;
+                    }
+                    DisplayMessage("ScanSheet SKU is Matched With Device SKU.");
+                }
                 #endregion
 
                 #region Check SW Version
@@ -578,15 +612,16 @@ namespace F002520
                 if (SWVersionControl == "TRUE")
                 {
                     DisplayMessage("Check Software Version.");
-                    if (SWVersionCheck(ref strErrorMessage) == false)
+                    if (SWVersionCheck(ScanSheetStationName, ref strErrorMessage) == false)
                     {
-                        MessageBox.Show("Software Vesion Not Matched !!!");
+                        MessageBox.Show("Check Software Vesion fail!, ErrorMessage:" + strErrorMessage);
+                        DisplayMessage("Check Software Vesion fail!, ErrorMessage:" + strErrorMessage, "ERROR");
                         return false;
                     }
                 }
                 else
                 {
-                    DisplayMessage("Skip to Check SW Version");
+                    DisplayMessage("Skip to Check Software Version");
                 }
 
                 #endregion
@@ -1015,7 +1050,7 @@ namespace F002520
                     DisplayMessage(string.Format("LOOP_{0}: Do Proximity Sensor Calibration.", i.ToString()));
                     DisplayMessage("Run CMD: " + strRunCmd);
 
-                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);    // 15s
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 5000, ref strResult);    // 15s
                     DisplayMessage("Result: \r\n" + strResult);
 
                     if (strResult.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) != -1)    // Somewhere appear fail
@@ -1075,6 +1110,13 @@ namespace F002520
                             bFlag = true;
                             break;
                         }
+                    }
+                    else
+                    {
+                        strErrorMessage = "Result Exception, fail to do Proximity Sensor Calibration !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;         
                     }
                 }
                 if (bFlag == false)
@@ -2419,7 +2461,9 @@ namespace F002520
                 }
                 if (strModel.Contains(frmMain.m_strModel) == false)  // take care !!!
                 {
-                    MessageBox.Show("The Product Not Match the Production Line That You Selected !!!");
+                    strErrorMessage = string.Format("The Product Not Match the Production Line That You Selected !!!\r\nDevice Model:{0}, Select Model:{1}.", strModel, frmMain.m_strModel);
+                    Logger.Error(strErrorMessage);
+                    MessageBox.Show(strErrorMessage);
                     return false;
                 }
                 frmMain.m_strModel = strModel;   // Confirm Device Model
@@ -2517,78 +2561,126 @@ namespace F002520
             return true;
         }
 
-        private bool SWVersionCheck(ref string strErrorMessage)
+        private bool GetScanSheet(string stationName, ref string strResult, ref string strErrorMessage)
         {
+            strResult = "";
             strErrorMessage = "";
-            string SoftwareNumber = Program.g_strToolNumber.ToUpper();
-            string SoftwareVersion = Program.g_strToolRev.ToUpper();
+            bool bFlag = false;
+            string BarcodeValue = "";       
+            string strStation = stationName;
             string strSKU = m_stUnitDeviceInfo.SKU;
-            //string strKeyWord = "";
-
+            string strModel = m_stUnitDeviceInfo.Model;
+           
             try
-            {
-                //bool bFlag = false;
-                ApiResult result = ScanSheet.Get(strSKU);
+            {                      
+                ApiResult result = ScanSheet.Get(strSKU);   // 根据Device SKU 获取 ScanSheet.
                 if (result.Status == 0)
-                {
-                    //string Station = "";
-                    //string BarcodeValue = "";
-                    //string[] strArray;
+                {        
                     string sJasonStr = JsonConvert.SerializeObject(result);
                     ScanSheetRes res = JsonConvert.DeserializeObject<ScanSheetRes>(sJasonStr);
 
-                    string strTestSoftwareControl = "";
-                    string strTestSoftwareNumber = "";
-                    string strTestSoftwareRev = "";
-
-                    #region Get Data
-
-                    if (res.Data.Count > 0)
+                    if (res.Data.Count == 0)
                     {
-                        var item = res.Data[0];
-                        strTestSoftwareControl = item.TestSoftwareRevControl.ToString().Trim();
-                        strTestSoftwareNumber = item.TestSoftware.ToString().Trim().ToUpper();
-                        strTestSoftwareRev = item.TestSoftwareRev.ToString().Trim().ToUpper();
-                    }
-                    else
-                    {
-                        strErrorMessage = "Don't found any ScanSheet. SKU:" + strSKU;
+                        strErrorMessage = "Can't find any ScanSheet by SKU:" + strSKU;
                         return false;
                     }
 
-                    #endregion
-
-                    #region Check Data
-
-                    if (string.IsNullOrWhiteSpace(strTestSoftwareControl) || string.IsNullOrWhiteSpace(strTestSoftwareNumber) || string.IsNullOrWhiteSpace(strTestSoftwareRev))
+                    // 遍历所有的 ScanSheet
+                    foreach (var item in res.Data)
                     {
-                        strErrorMessage = "Get ScanSheet Data fail.";
+                        string Station = item.Station.ToString();
+                        if (Station.IndexOf(strStation, StringComparison.OrdinalIgnoreCase) != -1)  // Find Target Station 
+                        {
+                            bFlag = true;
+                            BarcodeValue = item.BarCodeValue.ToString();
+                            break;
+                        }
+                    }
+
+                    if (bFlag == false)
+                    {
+                        strErrorMessage = string.Format("Can't find {0} Station ScanSheet !!!", strStation);
+                        return false;
+                    }          
+                }
+                else
+                {
+                    strErrorMessage = string.Format("FailMessage:{0}, Status:{1}.", result.Message, result.Status.ToString());
+                    DisplayMessage("Get ScanSheet fail. " + strErrorMessage);
+                    return false;
+                }
+
+                // Check Data
+                if (string.IsNullOrWhiteSpace(BarcodeValue))
+                {
+                    strErrorMessage = "Get ScanSheet Data is Empty !!!";
+                    return false;
+                }
+
+                // Split Data
+                string[] strArray = BarcodeValue.Split(new char[] { '\r', '\n' });
+                strResult = strArray[1].Trim();
+                if ((strResult.IndexOf(strModel, StringComparison.OrdinalIgnoreCase) == -1) || (strResult.Length < 10))
+                {
+                    strErrorMessage = "Get ScanSheet SKU is Invalid, Result: " + strResult;
+                    return false;
+                }
+            }
+            catch(Exception ex)
+            {
+                strErrorMessage = "Exception:" + ex.Message;
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool SWVersionCheck(string stationName, ref string strErrorMessage)
+        {
+            strErrorMessage = "";
+            bool bFlag = false;
+            string strStation = stationName;
+            string strSKU = m_stUnitDeviceInfo.SKU;
+            string SoftwareNumber = Program.g_strToolNumber;
+            string SoftwareVersion = Program.g_strToolRev;
+
+            string strTestSoftwareControl = "";
+            string strTestSoftwareNumber = "";
+            string strTestSoftwareRev = "";
+
+            try
+            {   
+                ApiResult result = ScanSheet.Get(strSKU);
+                if (result.Status == 0)
+                {
+                    string sJasonStr = JsonConvert.SerializeObject(result);
+                    ScanSheetRes res = JsonConvert.DeserializeObject<ScanSheetRes>(sJasonStr);
+
+                    if (res.Data.Count == 0)
+                    {
+                        strErrorMessage = "Can't Get any ScanSheet by SKU:" + strSKU;
                         return false;
                     }
 
-                    frmMain.m_stTestSaveData.TestRecord.SoftwareVersionControl = strTestSoftwareControl;
-
-                    if (strTestSoftwareControl == "1")
+                    // 遍历所有的 ScanSheet
+                    foreach (var item in res.Data)
                     {
-                        // Check
-                        if (strTestSoftwareNumber != SoftwareNumber)
-                        {
-                            strErrorMessage = "Software Number Not Matched !!!";
-                            return false;
-                        }
-                        if (strTestSoftwareRev != SoftwareVersion)
-                        {
-                            strErrorMessage = "Software Version Not Matched !!!";
-                            return false;
+                        string Station = item.Station.ToString();
+                        if (Station.IndexOf(strStation, StringComparison.OrdinalIgnoreCase) != -1)  // Find Target Station 
+                        {            
+                            strTestSoftwareControl = item.TestSoftwareRevControl.ToString().Trim();
+                            strTestSoftwareNumber = item.TestSoftware.ToString().Trim();
+                            strTestSoftwareRev = item.TestSoftwareRev.ToString().Trim();
+                            bFlag = true;
+                            break;
                         }
                     }
-                    else
-                    {
-                        // Not Check
-                        DisplayMessage("TestSoftwareRevControl = 0, No Need to Check Software Version ...");
-                    }
 
-                    #endregion
+                    if (bFlag == false)
+                    {
+                        strErrorMessage = string.Format("Can't find {0} Station ScanSheet !!!", strStation);
+                        return false;
+                    }           
                 }
                 else
                 {
@@ -2596,6 +2688,52 @@ namespace F002520
                     DisplayMessage("Get ScanSheet fail." + strErrorMessage);
                     return false;
                 }
+
+                DisplayMessage(string.Format("Get ScanSheet Data, TestSoftwareControl={0}, TestSoftware={1}, TestSoftwareRev={2}.", strTestSoftwareControl, strTestSoftwareNumber, strTestSoftwareRev));
+
+                #region Check Data
+
+                if (strTestSoftwareControl != "0" && strTestSoftwareControl != "1")
+                {
+                    strErrorMessage = "Get Invalid TestSoftwareControl Value: " + strTestSoftwareControl;
+                    return false;
+                }
+
+                frmMain.m_stTestSaveData.TestRecord.SoftwareVersionControl = strTestSoftwareControl;
+
+                if (string.IsNullOrWhiteSpace(strTestSoftwareNumber) || string.IsNullOrWhiteSpace(strTestSoftwareRev))
+                {
+                    strErrorMessage = string.Format("Get ScanSheet Data fail. TestSoftwareNumber: {0}, TestSoftwareRev: {1}.", strTestSoftwareNumber, strTestSoftwareRev);
+                    return false;
+                }
+
+                #endregion
+
+                #region Check Version
+
+                if (strTestSoftwareControl == "1")
+                {
+                    // Software Number
+                    if (strTestSoftwareNumber.ToUpper() != SoftwareNumber.ToUpper())
+                    {
+                        strErrorMessage = "Software Number Not Matched !!!";
+                        return false;
+                    }
+
+                    // Software Version
+                    if (strTestSoftwareRev.ToUpper() != SoftwareVersion.ToUpper())
+                    {
+                        strErrorMessage = "Software Version Not Matched !!!";
+                        return false;
+                    }
+                }
+                else
+                {
+                    // Not Check
+                    DisplayMessage("TestSoftwareRevControl=0, Skip to Check Software Version ...");
+                }
+
+                #endregion
             }
             catch (Exception ex)
             {

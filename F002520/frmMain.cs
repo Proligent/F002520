@@ -60,7 +60,7 @@ namespace F002520
 
         private bool m_bStop = false;
         //private bool m_bRunInitialized = false;
-        public static bool m_bMESEnable = false;
+        public static bool m_bMESEnable = false;    // Whether Upload MES
         public static bool m_bUploadMES = false;
    
         public static string m_strSN = "";

@@ -153,12 +153,27 @@ namespace F002520
 
                 string strSN = "";
                 string strCmd = "adb shell su 0 mfg-tool -g EX_SERIAL_NUMBER";
-
-                bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strSN);
-                DisplayMessage("Device SN: " + strSN);
-                if (strSN.Length != 10)
+                for (int i = 0; i < 5; i++)
                 {
-                    strErrorMessage = "Fail to Get SN !";
+                    bRes = clsProcess.ExcuteCmd(strCmd, 200, ref strSN);
+                    DisplayMessage("Device SN: " + strSN);
+
+                    if (strSN.Length != 10)
+                    {
+                        strErrorMessage = "Fail to Get SN !";
+                        bFlag = false;
+                        clsUtil.Dly(1.0);
+                        continue;
+                    }
+                    else
+                    {
+                        bFlag = true;
+                        break;
+                    }
+                }
+                if (bFlag == false)
+                {
+                    DisplayMessage(strErrorMessage);
                     return false;
                 }
 
@@ -192,7 +207,7 @@ namespace F002520
             {
                 #region Read MFG Data
 
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < 5; i++)
                 {
                     if (ReadMFGData(ref strErrorMessage) == false)
                     {
@@ -477,7 +492,7 @@ namespace F002520
                     DisplayMessage("Get WorkOrder Property.");
                     strCmd = "adb shell getprop persist.sys.WorkOrder";
 
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < 5; i++)
                     {
                         bRes = clsProcess.ExcuteCmd(strCmd, 500, ref strWorkOrder);
                         if (bRes && !string.IsNullOrWhiteSpace(strWorkOrder))
@@ -515,7 +530,7 @@ namespace F002520
                     DisplayMessage("Get EID Property.");
                     strCmd = "adb shell getprop persist.sys.FLASH";
 
-                    for (int i = 0; i < 3; i++)
+                    for (int i = 0; i < 5; i++)
                     {
                         bRes = clsProcess.ExcuteCmd(strCmd, 500, ref strEID);
                         if (bRes && !string.IsNullOrWhiteSpace(strEID))
@@ -2306,7 +2321,9 @@ namespace F002520
                 }
                 if (strModel.Contains(frmMain.m_strModel) == false)  // take care !!!
                 {
-                    MessageBox.Show("The Product Not Match the Production Line That You Selected !!!");
+                    strErrorMessage = string.Format("The Product Not Match the Production Line That You Selected !!!\r\nDevice Model:{0}, Select Model:{1}.", strModel, frmMain.m_strModel);
+                    Logger.Error(strErrorMessage);
+                    MessageBox.Show(strErrorMessage);
                     return false;
                 }
                 frmMain.m_strModel = strModel;   // Confirm Device Model
@@ -3097,7 +3114,7 @@ namespace F002520
                     DisplayMessage(string.Format("LOOP_{0}: Do PSensor Far-Position Calibration.", i.ToString()));
                     DisplayMessage("Run CMD: " + strRunCmd);
 
-                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);    // 15s
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 5000, ref strResult);    // 15s
                     DisplayMessage("Result: \r\n" + strResult);
 
                     if (strResult.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) != -1)    // Somewhere appear fail
@@ -3111,6 +3128,13 @@ namespace F002520
                     {
                         bFlag = true;
                         break;
+                    }
+                    else
+                    {
+                        strErrorMessage = "Result Exception, fail to do PSensor Far-Position Calibration !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
                     }
                 }
                 if (bFlag == false)
@@ -3175,7 +3199,7 @@ namespace F002520
                     DisplayMessage(string.Format("LOOP_{0}: Do PSensor Near-Position Calibration.", i.ToString()));
                     DisplayMessage("Run CMD: " + strRunCmd);
 
-                    bRes = clsProcess.ExcuteCmd(strRunCmd, 2000, ref strResult);    // 15s
+                    bRes = clsProcess.ExcuteCmd(strRunCmd, 5000, ref strResult);    // 15s
                     DisplayMessage("Result: \r\n" + strResult);
 
                     if (strResult.IndexOf("FAIL", StringComparison.OrdinalIgnoreCase) != -1)    // Somewhere appear fail
@@ -3189,6 +3213,13 @@ namespace F002520
                     {
                         bFlag = true;
                         break;
+                    }
+                    else
+                    {
+                        strErrorMessage = "Result Exception, fail to do PSensor Near-Position Calibration !!!";
+                        bFlag = false;
+                        clsUtil.Dly(3.0);
+                        continue;
                     }
                 }
                 if (bFlag == false)
